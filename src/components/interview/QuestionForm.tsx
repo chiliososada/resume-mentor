@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { CheckIcon, Plus, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
@@ -143,23 +144,4 @@ export const QuestionForm: React.FC = () => {
       </CardContent>
     </Card>
   );
-  
-  function Textarea({ id, value, onChange, placeholder, required }: { 
-    id: string; 
-    value: string; 
-    onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void; 
-    placeholder: string;
-    required?: boolean;
-  }) {
-    return (
-      <textarea
-        id={id}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-        className="w-full min-h-[120px] px-3 py-2 border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-      />
-    );
-  }
 };

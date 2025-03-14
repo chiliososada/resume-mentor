@@ -5,7 +5,8 @@ import { MessageSquare, ChevronDown, ChevronUp, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface QuestionCardProps {
@@ -158,15 +159,4 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
       </CardContent>
     </Card>
   );
-  
-  function Textarea({ placeholder, value, onChange, className }: { placeholder: string; value: string; onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void; className: string }) {
-    return (
-      <textarea
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        className={`w-full min-h-[80px] px-3 py-2 border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${className}`}
-      />
-    );
-  }
 };
