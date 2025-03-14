@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
 import { InterviewQuestion } from '@/types';
-import { MessageSquare, ChevronDown, ChevronUp, User } from 'lucide-react';
+import { MessageSquare, ChevronDown, ChevronUp, User, Edit, Check, X, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { toast } from '@/components/ui/use-toast';
 
 interface QuestionCardProps {
   question: InterviewQuestion;
@@ -25,6 +25,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
   const [expanded, setExpanded] = useState(false);
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [commentText, setCommentText] = useState('');
+  const [editingStatus, setEditingStatus] = useState(false);
+  const [status, setStatus] = useState<InterviewQuestion['status']>(question.status);
 
   const toggleExpanded = () => {
     setExpanded(!expanded);
@@ -39,14 +41,76 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
     }
   };
 
+  const handleStatusChange = (newStatus: InterviewQuestion['status']) => {
+    setStatus(newStatus);
+    setEditingStatus(false);
+    
+    // In a real app, this would update the status via an API
+    console.log(`Changing status from ${question.status} to ${newStatus}`);
+    
+    toast({
+      title: "Status updated",
+      description: `Question status changed to ${newStatus}`,
+    });
+  };
+
   const getStatusBadge = (status: InterviewQuestion['status']) => {
+    if (editingStatus) {
+      return (
+        <div className="flex gap-1">
+          <Badge 
+            className={`cursor-pointer bg-green-50 text-green-700 border-green-200 ${status === 'approved' ? 'ring-1 ring-green-700' : ''}`}
+            onClick={() => handleStatusChange('approved')}
+          >
+            <Check size={12} className="mr-1" />
+            Approved
+          </Badge>
+          <Badge 
+            className={`cursor-pointer bg-yellow-50 text-yellow-700 border-yellow-200 ${status === 'pending' ? 'ring-1 ring-yellow-700' : ''}`}
+            onClick={() => handleStatusChange('pending')}
+          >
+            <AlertCircle size={12} className="mr-1" />
+            Pending
+          </Badge>
+          <Badge 
+            className={`cursor-pointer bg-red-50 text-red-700 border-red-200 ${status === 'rejected' ? 'ring-1 ring-red-700' : ''}`}
+            onClick={() => handleStatusChange('rejected')}
+          >
+            <X size={12} className="mr-1" />
+            Rejected
+          </Badge>
+        </div>
+      );
+    }
+    
     switch (status) {
       case 'approved':
-        return <Badge className="bg-green-50 text-green-700 border-green-200">Approved</Badge>;
+        return (
+          <div className="flex items-center gap-1">
+            <Badge className="bg-green-50 text-green-700 border-green-200">Approved</Badge>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingStatus(true)}>
+              <Edit size={12} />
+            </Button>
+          </div>
+        );
       case 'rejected':
-        return <Badge className="bg-red-50 text-red-700 border-red-200">Rejected</Badge>;
+        return (
+          <div className="flex items-center gap-1">
+            <Badge className="bg-red-50 text-red-700 border-red-200">Rejected</Badge>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingStatus(true)}>
+              <Edit size={12} />
+            </Button>
+          </div>
+        );
       default:
-        return <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200">Pending</Badge>;
+        return (
+          <div className="flex items-center gap-1">
+            <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200">Pending</Badge>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingStatus(true)}>
+              <Edit size={12} />
+            </Button>
+          </div>
+        );
     }
   };
 
@@ -68,7 +132,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
                     Internal
                   </Badge>
                 )}
-                <div className="ml-auto">{getStatusBadge(question.status)}</div>
+                <div className="ml-auto">{getStatusBadge(status)}</div>
               </div>
               <h3 className="font-medium text-lg leading-tight text-balance">{question.question}</h3>
             </div>

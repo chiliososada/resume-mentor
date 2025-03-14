@@ -11,15 +11,14 @@ import { toast } from '@/components/ui/use-toast';
 export const QuestionForm: React.FC = () => {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
-  const [category, setCategory] = useState('');
-  const [company, setCompany] = useState('');
-  const [isInternal, setIsInternal] = useState(false);
+  const [keyword, setKeyword] = useState('');
+  const [caseContent, setCaseContent] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!question.trim() || !answer.trim() || !category.trim()) {
+    if (!question.trim() || !answer.trim() || !keyword.trim()) {
       toast({
         title: "Missing information",
         description: "Please fill out all required fields.",
@@ -32,9 +31,8 @@ export const QuestionForm: React.FC = () => {
     console.log({
       question,
       answer,
-      category,
-      company: company || undefined,
-      isInternal,
+      category: keyword, // Map to the original category field
+      caseContent: caseContent || undefined,
     });
     
     toast({
@@ -45,9 +43,8 @@ export const QuestionForm: React.FC = () => {
     // Reset form
     setQuestion('');
     setAnswer('');
-    setCategory('');
-    setCompany('');
-    setIsInternal(false);
+    setKeyword('');
+    setCaseContent('');
     setIsExpanded(false);
   };
 
@@ -65,7 +62,7 @@ export const QuestionForm: React.FC = () => {
   }
 
   return (
-    <Card className="glass-card animate-in overflow-hidden">
+    <Card className="glass-card animate-in overflow-hidden border border-gray-200">
       <CardContent className="p-0">
         <div className="flex justify-between items-center px-5 py-4 border-b">
           <h3 className="font-medium">Add New Interview Question</h3>
@@ -80,6 +77,16 @@ export const QuestionForm: React.FC = () => {
         </div>
         
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="caseContent">Case Content</Label>
+            <Textarea
+              id="caseContent"
+              value={caseContent}
+              onChange={(e) => setCaseContent(e.target.value)}
+              placeholder="Enter the case content (optional)"
+            />
+          </div>
+        
           <div className="space-y-1.5">
             <Label htmlFor="question">Question *</Label>
             <Input
@@ -102,40 +109,16 @@ export const QuestionForm: React.FC = () => {
             />
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="category">Category *</Label>
-              <Input
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g. Technical, Behavioral"
-                required
-              />
-            </div>
-            
-            <div className="space-y-1.5">
-              <Label htmlFor="company">Company (Optional)</Label>
-              <Input
-                id="company"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                placeholder="e.g. Google, Amazon"
-              />
-            </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="keyword">Keyword *</Label>
+            <Input
+              id="keyword"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="e.g. JavaScript, React, Leadership"
+              required
+            />
           </div>
-          
-          <label className="flex items-center space-x-2 cursor-pointer">
-            <div 
-              className={`w-5 h-5 border rounded flex items-center justify-center ${
-                isInternal ? 'bg-primary border-primary' : 'border-input'
-              }`}
-              onClick={() => setIsInternal(!isInternal)}
-            >
-              {isInternal && <CheckIcon size={12} className="text-primary-foreground" />}
-            </div>
-            <span className="text-sm">This is an internal company question</span>
-          </label>
           
           <div className="pt-2 flex justify-end">
             <Button type="submit">Submit Question</Button>
