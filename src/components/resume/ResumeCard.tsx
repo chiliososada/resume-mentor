@@ -42,7 +42,7 @@ const getStatusColor = (status: Resume['status']) => {
 
 export const ResumeCard: React.FC<ResumeCardProps> = ({ resume, onView }) => {
   return (
-    <Card className="hover-scale glass-card overflow-hidden animate-in">
+    <Card className="hover-scale glass-card overflow-hidden animate-in border border-gray-200">
       <CardContent className="p-0">
         <div className="p-5">
           <div className="flex justify-between items-start mb-3">

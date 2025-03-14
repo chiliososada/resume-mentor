@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Resume } from '@/types';
+import { Resume, Comment } from '@/types';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +15,7 @@ import {
   Clock,
   FileDown,
   Eye,
+  Send,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -25,12 +25,14 @@ import {
   SelectTrigger, 
   SelectValue
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ResumeViewModalProps {
   resume: Resume;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onStatusChange: (resumeId: string, status: Resume['status']) => void;
+  onAddComment?: (resumeId: string, comment: string) => void;
 }
 
 const formatDate = (date: Date) => {
@@ -70,8 +72,10 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
   open,
   onOpenChange,
   onStatusChange,
+  onAddComment,
 }) => {
   const [currentStatus, setCurrentStatus] = useState<Resume['status']>(resume.status);
+  const [newComment, setNewComment] = useState('');
 
   const handleStatusChange = (newStatus: string) => {
     setCurrentStatus(newStatus as Resume['status']);
@@ -79,6 +83,13 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
 
   const saveChanges = () => {
     onStatusChange(resume.id, currentStatus);
+  };
+
+  const handleAddComment = () => {
+    if (newComment.trim() && onAddComment) {
+      onAddComment(resume.id, newComment.trim());
+      setNewComment('');
+    }
   };
 
   return (
@@ -125,11 +136,11 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
             </Select>
           </div>
 
-          {resume.comments && resume.comments.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium">Comments</span>
-              <div className="max-h-40 overflow-y-auto space-y-2 border rounded-md p-2">
-                {resume.comments.map((comment) => (
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium">Comments</span>
+            <div className="max-h-40 overflow-y-auto space-y-2 border rounded-md p-2">
+              {resume.comments && resume.comments.length > 0 ? (
+                resume.comments.map((comment) => (
                   <div key={comment.id} className="bg-muted/50 rounded-md p-2">
                     <div className="text-sm font-medium">{comment.createdBy}</div>
                     <div className="text-sm">{comment.content}</div>
@@ -137,10 +148,32 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
                       {formatDate(comment.createdAt)}
                     </div>
                   </div>
-                ))}
-              </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No comments yet</p>
+              )}
             </div>
-          )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium">Add Comment</span>
+            <div className="flex gap-2">
+              <Textarea 
+                placeholder="Write a comment..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="min-h-[80px] resize-none"
+              />
+            </div>
+            <Button 
+              onClick={handleAddComment} 
+              className="w-full flex items-center gap-2"
+              disabled={!newComment.trim()}
+            >
+              <Send size={16} />
+              Add Comment
+            </Button>
+          </div>
         </div>
 
         <DialogFooter className="flex sm:justify-between gap-2">

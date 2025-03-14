@@ -1,13 +1,13 @@
-
 import React, { useState } from 'react';
 import { ResumeCard } from '@/components/resume/ResumeCard';
 import { ResumeUpload } from '@/components/resume/ResumeUpload';
-import { Resume } from '@/types';
+import { Resume, Comment } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Search, Filter, DownloadCloud, Plus, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ResumeViewModal } from '@/components/resume/ResumeViewModal';
+import { useToast } from '@/hooks/use-toast';
 
 const mockResumes: Resume[] = [
   {
@@ -60,11 +60,13 @@ const mockResumes: Resume[] = [
 ];
 
 const ResumePage = () => {
+  const [resumes, setResumes] = useState<Resume[]>(mockResumes);
   const [searchQuery, setSearchQuery] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [selectedResume, setSelectedResume] = useState<Resume | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
+  const { toast } = useToast();
   
   const toggleFilter = (filter: string) => {
     if (activeFilters.includes(filter)) {
@@ -74,7 +76,7 @@ const ResumePage = () => {
     }
   };
   
-  const filteredResumes = mockResumes.filter(resume => {
+  const filteredResumes = resumes.filter(resume => {
     const matchesSearch = resume.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                          resume.fileName.toLowerCase().includes(searchQuery.toLowerCase());
     
@@ -90,22 +92,56 @@ const ResumePage = () => {
   };
 
   const handleStatusChange = (resumeId: string, newStatus: Resume['status']) => {
-    // In a real app, this would call an API to update the status
-    // For now, we'll just update our local state to demonstrate the functionality
-    const updatedResumes = mockResumes.map(resume => {
+    const updatedResumes = resumes.map(resume => {
       if (resume.id === resumeId) {
         return { ...resume, status: newStatus };
       }
       return resume;
     });
     
-    // Update the selected resume if it's open in the modal
+    setResumes(updatedResumes);
+    
     if (selectedResume && selectedResume.id === resumeId) {
       setSelectedResume({ ...selectedResume, status: newStatus });
     }
     
-    // Close the modal
+    toast({
+      title: "Status updated",
+      description: `Resume status has been updated to ${newStatus}.`,
+    });
+    
     setShowViewModal(false);
+  };
+
+  const handleAddComment = (resumeId: string, content: string) => {
+    const newComment: Comment = {
+      id: `c${Date.now()}`,
+      content,
+      createdBy: 'Current User',
+      createdAt: new Date(),
+    };
+    
+    const updatedResumes = resumes.map(resume => {
+      if (resume.id === resumeId) {
+        const updatedComments = resume.comments ? [...resume.comments, newComment] : [newComment];
+        return { ...resume, comments: updatedComments };
+      }
+      return resume;
+    });
+    
+    setResumes(updatedResumes);
+    
+    if (selectedResume && selectedResume.id === resumeId) {
+      const updatedComments = selectedResume.comments 
+        ? [...selectedResume.comments, newComment] 
+        : [newComment];
+      setSelectedResume({ ...selectedResume, comments: updatedComments });
+    }
+    
+    toast({
+      title: "Comment added",
+      description: "Your comment has been added to the resume.",
+    });
   };
 
   return (
@@ -197,6 +233,7 @@ const ResumePage = () => {
           open={showViewModal}
           onOpenChange={setShowViewModal}
           onStatusChange={handleStatusChange}
+          onAddComment={handleAddComment}
         />
       )}
     </div>
