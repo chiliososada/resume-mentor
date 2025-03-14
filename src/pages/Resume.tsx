@@ -121,16 +121,63 @@ const ResumePage = () => {
   };
 
   const handleDownloadTemplate = async () => {
+    // try {
+    //   setLoading(true);
+    //   // 获取模板URL
+    //   const response = await resumeService.getTemplate();
+      
+    //   if (!response.templateUrl) {
+    //     throw new Error('模板URL无效');
+    //   }
+      
+    //   // 提取文件名
+    //   const fileName = response.templateUrl.split('/').pop() || 'resume_template.xlsx';
+      
+    //   // 使用已有的下载方法，而不是window.open
+    //   await resumeService.downloadResume(response.templateUrl, fileName);
+      
+    //   toast({
+    //     title: "下载成功",
+    //     description: "简历模板已开始下载。",
+    //   });
+    // } 
+    
     try {
-      const template = await resumeService.getTemplate();
-      window.open(template.templateUrl, '_blank');
-    } catch (error) {
+      // 从fileUrl中提取GUID文件名
+      const fileName = "resume_template.xlsx";
+      
+      // 使用FileController的下载端点
+      const response = await fetch(`/api/File/templates/${fileName}`);
+      
+      if (!response.ok) {
+        throw new Error('下载失败');
+      }
+      
+      // 获取文件数据并创建Blob
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      // 创建下载链接并触发下载
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "resume_template.xlsx"; // 使用原始文件名
+      document.body.appendChild(a);
+      a.click();
+      
+      // 清理
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    }
+    
+    catch (error) {
       console.error('获取模板失败:', error);
       toast({
         title: "获取模板失败",
         description: "无法获取简历模板，请稍后重试。",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
