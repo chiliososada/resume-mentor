@@ -1,12 +1,13 @@
 
 import React from 'react';
 import { Resume } from '@/types';
-import { FileText, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { FileText, Clock, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface ResumeCardProps {
   resume: Resume;
+  onView?: () => void;
 }
 
 const formatDate = (date: Date) => {
@@ -39,7 +40,7 @@ const getStatusColor = (status: Resume['status']) => {
   }
 };
 
-export const ResumeCard: React.FC<ResumeCardProps> = ({ resume }) => {
+export const ResumeCard: React.FC<ResumeCardProps> = ({ resume, onView }) => {
   return (
     <Card className="hover-scale glass-card overflow-hidden animate-in">
       <CardContent className="p-0">
@@ -69,14 +70,12 @@ export const ResumeCard: React.FC<ResumeCardProps> = ({ resume }) => {
           </div>
         </div>
         <div className="flex divide-x border-t mt-1">
-          <a 
-            href={resume.fileUrl} 
+          <button 
             className="flex-1 py-2.5 text-center text-sm font-medium text-primary hover:bg-muted/50 transition-colors"
-            target="_blank" 
-            rel="noopener noreferrer"
+            onClick={onView}
           >
             View
-          </a>
+          </button>
           <a 
             href={resume.fileUrl} 
             className="flex-1 py-2.5 text-center text-sm font-medium text-primary hover:bg-muted/50 transition-colors"

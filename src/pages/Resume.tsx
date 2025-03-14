@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Search, Filter, DownloadCloud, Plus, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { ResumeViewModal } from '@/components/resume/ResumeViewModal';
 
 const mockResumes: Resume[] = [
   {
@@ -62,6 +63,8 @@ const ResumePage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [selectedResume, setSelectedResume] = useState<Resume | null>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
   
   const toggleFilter = (filter: string) => {
     if (activeFilters.includes(filter)) {
@@ -80,6 +83,30 @@ const ResumePage = () => {
     
     return matchesSearch && matchesFilters;
   });
+
+  const handleViewResume = (resume: Resume) => {
+    setSelectedResume(resume);
+    setShowViewModal(true);
+  };
+
+  const handleStatusChange = (resumeId: string, newStatus: Resume['status']) => {
+    // In a real app, this would call an API to update the status
+    // For now, we'll just update our local state to demonstrate the functionality
+    const updatedResumes = mockResumes.map(resume => {
+      if (resume.id === resumeId) {
+        return { ...resume, status: newStatus };
+      }
+      return resume;
+    });
+    
+    // Update the selected resume if it's open in the modal
+    if (selectedResume && selectedResume.id === resumeId) {
+      setSelectedResume({ ...selectedResume, status: newStatus });
+    }
+    
+    // Close the modal
+    setShowViewModal(false);
+  };
 
   return (
     <div className="page-transition">
@@ -140,9 +167,13 @@ const ResumePage = () => {
             </div>
           </div>
           
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 border border-border rounded-lg p-4">
             {filteredResumes.map((resume) => (
-              <ResumeCard key={resume.id} resume={resume} />
+              <ResumeCard 
+                key={resume.id} 
+                resume={resume} 
+                onView={() => handleViewResume(resume)}
+              />
             ))}
             
             {filteredResumes.length === 0 && (
@@ -159,6 +190,15 @@ const ResumePage = () => {
           </div>
         </div>
       </div>
+
+      {selectedResume && (
+        <ResumeViewModal
+          resume={selectedResume}
+          open={showViewModal}
+          onOpenChange={setShowViewModal}
+          onStatusChange={handleStatusChange}
+        />
+      )}
     </div>
   );
 };
