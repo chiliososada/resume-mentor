@@ -1,18 +1,24 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, Lock, Bell, Globe, Mail } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { Textarea } from '@/components/ui/textarea';
+import { User, Lock } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { profileService, ProfileData } from '@/services/profileService';
+import { authService, ChangePasswordRequest } from '@/services/authService';
 
 const SettingsPage = () => {
-  const [user, setUser] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    avatar: '',
+  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<ProfileData>({
+    fullName: '',
+    birthDate: '',
+    birthPlace: '',
+    introduction: '',
+    hobbies: '',
   });
   
   const [passwords, setPasswords] = useState({
@@ -21,22 +27,54 @@ const SettingsPage = () => {
     confirm: '',
   });
   
-  const [notifications, setNotifications] = useState({
-    email: true,
-    browser: true,
-    updates: false,
-    marketing: false,
-  });
+  const { toast } = useToast();
   
-  const handleProfileUpdate = (e: React.FormEvent) => {
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setIsLoading(true);
+        const profileData = await profileService.getProfile();
+        setUser(profileData);
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+        toast({
+          title: "Error loading profile",
+          description: "Failed to load your profile information. Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchProfile();
+  }, [toast]);
+  
+  const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Profile updated",
-      description: "Your profile information has been updated successfully.",
-    });
+    
+    try {
+      setIsLoading(true);
+      
+      const response = await profileService.updateProfile(user);
+      
+      toast({
+        title: "Profile updated",
+        description: response.message || "Your profile information has been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Profile update error:', error);
+      toast({
+        title: "Update failed",
+        description: "An error occurred while updating your profile.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
-  const handlePasswordUpdate = (e: React.FormEvent) => {
+  const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (passwords.new !== passwords.confirm) {
@@ -57,24 +95,56 @@ const SettingsPage = () => {
       return;
     }
     
-    toast({
-      title: "Password updated",
-      description: "Your password has been updated successfully.",
-    });
-    
-    setPasswords({
-      current: '',
-      new: '',
-      confirm: '',
-    });
+    try {
+      setIsLoading(true);
+      
+      const passwordData: ChangePasswordRequest = {
+        currentPassword: passwords.current,
+        newPassword: passwords.new
+      };
+      
+      const response = await authService.changePassword(passwordData);
+      
+      toast({
+        title: "Password updated",
+        description: response.message || "Your password has been updated successfully.",
+      });
+      
+      setPasswords({
+        current: '',
+        new: '',
+        confirm: '',
+      });
+    } catch (error) {
+      console.error('Password update error:', error);
+      // Error is already handled in the API service
+    } finally {
+      setIsLoading(false);
+    }
   };
   
-  const handleNotificationUpdate = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast({
-      title: "Notification settings updated",
-      description: "Your notification preferences have been saved.",
-    });
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    const file = e.target.files[0];
+    
+    try {
+      setIsLoading(true);
+      
+      const response = await profileService.uploadAvatar(file);
+      
+      toast({
+        title: "Avatar uploaded",
+        description: response.message || "Your avatar has been uploaded successfully.",
+      });
+      
+      // You might want to update the avatar display here
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      // Error is already handled in the API service
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -102,36 +172,75 @@ const SettingsPage = () => {
               <form onSubmit={handleProfileUpdate} className="space-y-4">
                 <div className="flex flex-col items-center mb-6">
                   <Avatar className="h-24 w-24 mb-4">
+                    <AvatarImage src="" alt="Avatar" />
                     <AvatarFallback className="text-2xl">
-                      {user.name.charAt(0)}
+                      {user.fullName?.charAt(0) || '?'}
                     </AvatarFallback>
                   </Avatar>
-                  <Button variant="outline" size="sm">
-                    Change Avatar
-                  </Button>
+                  <input
+                    type="file"
+                    id="avatar-upload"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                  />
+                  <label htmlFor="avatar-upload">
+                    <Button variant="outline" size="sm" className="cursor-pointer" type="button">
+                      Change Avatar
+                    </Button>
+                  </label>
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
                   <Input
                     id="name"
-                    value={user.name}
-                    onChange={(e) => setUser({ ...user, name: e.target.value })}
+                    value={user.fullName}
+                    onChange={(e) => setUser({ ...user, fullName: e.target.value })}
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="birthDate">Birth Date</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    value={user.email}
-                    onChange={(e) => setUser({ ...user, email: e.target.value })}
+                    id="birthDate"
+                    type="date"
+                    value={user.birthDate || ''}
+                    onChange={(e) => setUser({ ...user, birthDate: e.target.value })}
                   />
                 </div>
                 
-                <Button type="submit" className="w-full">
-                  Save Changes
+                <div className="space-y-2">
+                  <Label htmlFor="birthPlace">Birth Place</Label>
+                  <Input
+                    id="birthPlace"
+                    value={user.birthPlace || ''}
+                    onChange={(e) => setUser({ ...user, birthPlace: e.target.value })}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="introduction">Introduction</Label>
+                  <Textarea
+                    id="introduction"
+                    rows={3}
+                    value={user.introduction || ''}
+                    onChange={(e) => setUser({ ...user, introduction: e.target.value })}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="hobbies">Hobbies</Label>
+                  <Textarea
+                    id="hobbies"
+                    rows={2}
+                    value={user.hobbies || ''}
+                    onChange={(e) => setUser({ ...user, hobbies: e.target.value })}
+                  />
+                </div>
+                
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Saving...' : 'Save Changes'}
                 </Button>
               </form>
             </CardContent>
@@ -182,112 +291,9 @@ const SettingsPage = () => {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={!passwords.current || !passwords.new || !passwords.confirm}
+                  disabled={isLoading || !passwords.current || !passwords.new || !passwords.confirm}
                 >
-                  Update Password
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-          
-          <Card className="glass-card animate-in md:col-span-2">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Bell size={18} className="text-muted-foreground" />
-                <CardTitle>Notification Settings</CardTitle>
-              </div>
-              <CardDescription>
-                Manage how and when you receive notifications
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleNotificationUpdate} className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Notification Channels</h3>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Mail size={18} className="text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">Email Notifications</p>
-                        <p className="text-xs text-muted-foreground">
-                          Receive notifications via email
-                        </p>
-                      </div>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={notifications.email}
-                        onChange={() => setNotifications({ ...notifications, email: !notifications.email })}
-                      />
-                      <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                    </label>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Globe size={18} className="text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">Browser Notifications</p>
-                        <p className="text-xs text-muted-foreground">
-                          Receive notifications in your browser
-                        </p>
-                      </div>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={notifications.browser}
-                        onChange={() => setNotifications({ ...notifications, browser: !notifications.browser })}
-                      />
-                      <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Notification Types</h3>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Product Updates</p>
-                      <p className="text-xs text-muted-foreground">
-                        Receive notifications about new features and updates
-                      </p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={notifications.updates}
-                        onChange={() => setNotifications({ ...notifications, updates: !notifications.updates })}
-                      />
-                      <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                    </label>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Marketing</p>
-                      <p className="text-xs text-muted-foreground">
-                        Receive marketing communications and promotions
-                      </p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={notifications.marketing}
-                        onChange={() => setNotifications({ ...notifications, marketing: !notifications.marketing })}
-                      />
-                      <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                    </label>
-                  </div>
-                </div>
-                
-                <Button type="submit" className="w-full md:w-auto">
-                  Save Notification Settings
+                  {isLoading ? 'Updating...' : 'Update Password'}
                 </Button>
               </form>
             </CardContent>

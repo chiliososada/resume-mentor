@@ -1,8 +1,10 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Users, Calendar, BookOpen, ArrowUp, ArrowDown } from 'lucide-react';
+import { Button } from '@/components/ui/button'; // Added missing Button import
+import { FileText, Users, ArrowUp, ArrowDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { dashboardService, DashboardData } from '@/services/dashboardService';
 
 const DashboardCard = ({ 
   title, 
@@ -44,6 +46,28 @@ const DashboardCard = ({
 );
 
 const Dashboard = () => {
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        const data = await dashboardService.getDashboardData();
+        setDashboardData(data);
+        setError(null);
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+        setError('Failed to load dashboard data. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
   return (
     <div className="page-transition">
       <div className="flex flex-col gap-6">
@@ -54,87 +78,91 @@ const Dashboard = () => {
           </p>
         </div>
         
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <DashboardCard
-            title="Resumes"
-            value={12}
-            description="3 pending review"
-            icon={FileText}
-            change={{ value: 12, positive: true }}
-            link="/resume"
-          />
-          <DashboardCard
-            title="Interview Questions"
-            value={42}
-            description="8 new this week"
-            icon={Users}
-            change={{ value: 8, positive: true }}
-            link="/interview"
-          />
-          <DashboardCard
-            title="Attendance Rate"
-            value="95%"
-            description="Last 30 days"
-            icon={Calendar}
-            change={{ value: 2, positive: true }}
-            link="/attendance"
-          />
-          <DashboardCard
-            title="Active Courses"
-            value={4}
-            description="1 starting soon"
-            icon={BookOpen}
-            link="/courses"
-          />
-        </div>
+        {isLoading ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="glass-card hover-scale animate-pulse">
+              <div className="h-32"></div>
+            </Card>
+            <Card className="glass-card hover-scale animate-pulse">
+              <div className="h-32"></div>
+            </Card>
+          </div>
+        ) : error ? (
+          <Card className="glass-card p-6 text-center">
+            <p className="text-red-500">{error}</p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </Button>
+          </Card>
+        ) : dashboardData ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            <DashboardCard
+              title="Resumes"
+              value={dashboardData.resumeStats.total}
+              description={`${dashboardData.resumeStats.pending} pending review`}
+              icon={FileText}
+              change={{ value: 
+                dashboardData.resumeStats.total > 0 
+                  ? Math.round((dashboardData.resumeStats.approved / dashboardData.resumeStats.total) * 100) 
+                  : 0, 
+                positive: true 
+              }}
+              link="/resume"
+            />
+            <DashboardCard
+              title="Interview Questions"
+              value={dashboardData.questionStats.total}
+              description={`${dashboardData.questionStats.recent} new this week`}
+              icon={Users}
+              change={{ 
+                value: dashboardData.questionStats.recent, 
+                positive: dashboardData.questionStats.recent > 0 
+              }}
+              link="/interview"
+            />
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            <DashboardCard
+              title="Resumes"
+              value={12}
+              description="3 pending review"
+              icon={FileText}
+              change={{ value: 12, positive: true }}
+              link="/resume"
+            />
+            <DashboardCard
+              title="Interview Questions"
+              value={42}
+              description="8 new this week"
+              icon={Users}
+              change={{ value: 8, positive: true }}
+              link="/interview"
+            />
+          </div>
+        )}
         
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="glass-card md:col-span-2 overflow-hidden">
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Your most recent interactions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-start gap-4 animate-in" style={{ animationDelay: `${i * 100}ms` }}>
-                    <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center">
-                      <Users className="h-5 w-5 text-foreground/80" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">New interview question added</p>
-                      <p className="text-sm text-muted-foreground">
-                        "How would you design a system for real-time notifications?"
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">2 hours ago</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="glass-card overflow-hidden">
-            <CardHeader>
-              <CardTitle>Upcoming Events</CardTitle>
-              <CardDescription>Your schedule for the week</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[1, 2].map((i) => (
-                  <div 
-                    key={i} 
-                    className="p-3 rounded-lg border animate-in" 
-                    style={{ animationDelay: `${i * 100}ms` }}
-                  >
-                    <p className="text-sm font-medium">Mock Interview Session</p>
-                    <p className="text-xs text-muted-foreground mt-1">Tomorrow, 2:00 PM</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="glass-card overflow-hidden">
+          <CardHeader>
+            <CardTitle>Welcome to ToYouSoftEms</CardTitle>
+            <CardDescription>Employee Management System</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p>ToYouSoftEms helps you manage your professional development journey.</p>
+              <p>Use the sidebar to navigate between different sections:</p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li>Review and update your <strong>Resume</strong></li>
+                <li>Prepare for <strong>Interviews</strong> with practice questions</li>
+                <li>Manage your <strong>Settings</strong> and profile information</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
