@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Resume, Comment } from '@/types';
+import { Resume, Comment } from '@/services/resumeService';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,8 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { resumeService } from '@/services/resumeService';
+import { toast } from '@/components/ui/use-toast';
 
 interface ResumeViewModalProps {
   resume: Resume;
@@ -36,7 +38,7 @@ interface ResumeViewModalProps {
 }
 
 const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -92,6 +94,41 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
     }
   };
 
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      await resumeService.downloadResume(resume.fileUrl, resume.fileName);
+    } catch (error) {
+      console.error('下载失败:', error);
+      toast({
+        title: "下载失败",
+        description: "无法下载文件，请稍后重试。",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleView = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      // 对于PDF文件，我们可以在新窗口中打开
+      if (resume.fileName.toLowerCase().endsWith('.pdf')) {
+        const url = resume.fileUrl.startsWith('http') ? resume.fileUrl : `${window.location.origin}${resume.fileUrl}`;
+        window.open(url, '_blank');
+      } else {
+        // 对于其他文件，下载后查看
+        await resumeService.downloadResume(resume.fileUrl, resume.fileName);
+      }
+    } catch (error) {
+      console.error('查看文件失败:', error);
+      toast({
+        title: "查看失败",
+        description: "无法查看文件，请稍后重试。",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -103,41 +140,45 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
 
         <div className="space-y-4 py-2">
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium">File Name</span>
+            <span className="text-sm font-medium">文件名</span>
             <span className="text-sm text-muted-foreground">{resume.fileName}</span>
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Uploaded</span>
+            <span className="text-sm font-medium">上传时间</span>
             <span className="text-sm text-muted-foreground">{formatDate(resume.uploadedAt)}</span>
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Current Status</span>
+            <span className="text-sm font-medium">当前状态</span>
             <Badge className={`w-fit ${getStatusColor(resume.status)}`}>
               <span className="flex items-center gap-1">
                 {getStatusIcon(resume.status)}
-                {resume.status}
+                {{
+                  'pending': '待审核',
+                  'reviewed': '已审阅',
+                  'approved': '已批准'
+                }[resume.status]}
               </span>
             </Badge>
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Change Status</span>
+            <span className="text-sm font-medium">修改状态</span>
             <Select value={currentStatus} onValueChange={handleStatusChange}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select status" />
+                <SelectValue placeholder="选择状态" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="reviewed">Reviewed</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="pending">待审核</SelectItem>
+                <SelectItem value="reviewed">已审阅</SelectItem>
+                <SelectItem value="approved">已批准</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium">Comments</span>
+            <span className="text-sm font-medium">评论</span>
             <div className="max-h-40 overflow-y-auto space-y-2 border rounded-md p-2">
               {resume.comments && resume.comments.length > 0 ? (
                 resume.comments.map((comment) => (
@@ -150,16 +191,16 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground">No comments yet</p>
+                <p className="text-sm text-muted-foreground">暂无评论</p>
               )}
             </div>
           </div>
 
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium">Add Comment</span>
+            <span className="text-sm font-medium">添加评论</span>
             <div className="flex gap-2">
               <Textarea 
-                placeholder="Write a comment..."
+                placeholder="写下你的评论..."
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 className="min-h-[80px] resize-none"
@@ -171,7 +212,7 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
               disabled={!newComment.trim()}
             >
               <Send size={16} />
-              Add Comment
+              添加评论
             </Button>
           </div>
         </div>
@@ -181,25 +222,21 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
             <Button 
               variant="outline" 
               className="flex items-center gap-1"
-              asChild
+              onClick={handleView}
             >
-              <a href={resume.fileUrl} target="_blank" rel="noopener noreferrer">
-                <Eye size={16} />
-                View
-              </a>
+              <Eye size={16} />
+              查看
             </Button>
             <Button 
               variant="outline" 
               className="flex items-center gap-1"
-              asChild
+              onClick={handleDownload}
             >
-              <a href={resume.fileUrl} download={resume.fileName}>
-                <FileDown size={16} />
-                Download
-              </a>
+              <FileDown size={16} />
+              下载
             </Button>
           </div>
-          <Button onClick={saveChanges}>Save Status</Button>
+          <Button onClick={saveChanges}>保存状态</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

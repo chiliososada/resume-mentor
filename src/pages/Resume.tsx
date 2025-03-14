@@ -1,72 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ResumeCard } from '@/components/resume/ResumeCard';
 import { ResumeUpload } from '@/components/resume/ResumeUpload';
-import { Resume, Comment } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Search, Filter, DownloadCloud, Plus, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ResumeViewModal } from '@/components/resume/ResumeViewModal';
 import { useToast } from '@/hooks/use-toast';
-
-const mockResumes: Resume[] = [
-  {
-    id: '1',
-    title: 'Software Engineer Resume',
-    fileName: 'software_engineer_resume.pdf',
-    fileUrl: '#',
-    uploadedBy: 'user1',
-    uploadedAt: new Date(2023, 5, 15),
-    status: 'approved',
-    comments: [
-      {
-        id: 'c1',
-        content: 'Great formatting and structure!',
-        createdBy: 'teacher1',
-        createdAt: new Date(2023, 5, 16),
-      },
-    ],
-  },
-  {
-    id: '2',
-    title: 'Data Scientist Resume',
-    fileName: 'data_scientist_resume.pdf',
-    fileUrl: '#',
-    uploadedBy: 'user1',
-    uploadedAt: new Date(2023, 5, 20),
-    status: 'reviewed',
-    comments: [],
-  },
-  {
-    id: '3',
-    title: 'Product Manager Resume',
-    fileName: 'product_manager_resume.pdf',
-    fileUrl: '#',
-    uploadedBy: 'user2',
-    uploadedAt: new Date(2023, 6, 1),
-    status: 'pending',
-    comments: [],
-  },
-  {
-    id: '4',
-    title: 'UX Designer Resume',
-    fileName: 'ux_designer_resume.pdf',
-    fileUrl: '#',
-    uploadedBy: 'user3',
-    uploadedAt: new Date(2023, 6, 5),
-    status: 'pending',
-    comments: [],
-  },
-];
+import { resumeService, Resume, Comment } from '@/services/resumeService';
 
 const ResumePage = () => {
-  const [resumes, setResumes] = useState<Resume[]>(mockResumes);
+  const [resumes, setResumes] = useState<Resume[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [selectedResume, setSelectedResume] = useState<Resume | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const { toast } = useToast();
+  
+  // 获取简历列表
+  const fetchResumes = async () => {
+    try {
+      setLoading(true);
+      const data = await resumeService.getResumes();
+      setResumes(data);
+    } catch (error) {
+      console.error('获取简历列表失败:', error);
+      toast({
+        title: "获取失败",
+        description: "无法获取简历列表，请稍后重试。",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // 组件挂载时获取数据
+  useEffect(() => {
+    fetchResumes();
+  }, []);
   
   const toggleFilter = (filter: string) => {
     if (activeFilters.includes(filter)) {
@@ -92,6 +66,8 @@ const ResumePage = () => {
   };
 
   const handleStatusChange = (resumeId: string, newStatus: Resume['status']) => {
+    // 这里应该调用API来更新状态
+    // 目前只在前端更新状态用于展示
     const updatedResumes = resumes.map(resume => {
       if (resume.id === resumeId) {
         return { ...resume, status: newStatus };
@@ -106,8 +82,8 @@ const ResumePage = () => {
     }
     
     toast({
-      title: "Status updated",
-      description: `Resume status has been updated to ${newStatus}.`,
+      title: "状态已更新",
+      description: `简历状态已更新为${newStatus}。`,
     });
     
     setShowViewModal(false);
@@ -139,9 +115,23 @@ const ResumePage = () => {
     }
     
     toast({
-      title: "Comment added",
-      description: "Your comment has been added to the resume.",
+      title: "评论已添加",
+      description: "您的评论已添加到简历。",
     });
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const template = await resumeService.getTemplate();
+      window.open(template.templateUrl, '_blank');
+    } catch (error) {
+      console.error('获取模板失败:', error);
+      toast({
+        title: "获取模板失败",
+        description: "无法获取简历模板，请稍后重试。",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -149,29 +139,33 @@ const ResumePage = () => {
       <div className="flex flex-col gap-6">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Resumes</h1>
+            <h1 className="text-3xl font-bold tracking-tight">简历</h1>
             <p className="text-muted-foreground mt-1">
-              Upload, manage, and review resumes
+              上传、管理和审阅简历
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2"
+              onClick={handleDownloadTemplate}
+            >
               <DownloadCloud size={16} />
-              Templates
+              模板
             </Button>
             <Button 
               className="flex items-center gap-2"
               onClick={() => setShowUpload(!showUpload)}
             >
               {showUpload ? <X size={16} /> : <Plus size={16} />}
-              {showUpload ? 'Cancel' : 'Upload Resume'}
+              {showUpload ? '取消' : '上传简历'}
             </Button>
           </div>
         </div>
         
         {showUpload && (
           <div className="animate-fade-in">
-            <ResumeUpload />
+            <ResumeUpload onUploadSuccess={fetchResumes} />
           </div>
         )}
         
@@ -180,7 +174,7 @@ const ResumePage = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
               <Input
-                placeholder="Search resumes..."
+                placeholder="搜索简历..."
                 className="pl-9"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -196,7 +190,11 @@ const ResumePage = () => {
                     className="cursor-pointer capitalize"
                     onClick={() => toggleFilter(status)}
                   >
-                    {status}
+                    {{
+                      'pending': '待审核',
+                      'reviewed': '已审阅',
+                      'approved': '已批准'
+                    }[status]}
                   </Badge>
                 ))}
               </div>
@@ -204,24 +202,32 @@ const ResumePage = () => {
           </div>
           
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 border border-border rounded-lg p-4">
-            {filteredResumes.map((resume) => (
-              <ResumeCard 
-                key={resume.id} 
-                resume={resume} 
-                onView={() => handleViewResume(resume)}
-              />
-            ))}
-            
-            {filteredResumes.length === 0 && (
-              <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-                <div className="rounded-full bg-muted p-3 mb-3">
-                  <Search className="h-6 w-6 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-medium">No resumes found</h3>
-                <p className="text-muted-foreground mt-1 max-w-md">
-                  We couldn't find any resumes matching your search criteria. Try adjusting your filters or upload a new resume.
-                </p>
+            {loading ? (
+              <div className="col-span-full flex justify-center p-8">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
               </div>
+            ) : (
+              <>
+                {filteredResumes.map((resume) => (
+                  <ResumeCard 
+                    key={resume.id} 
+                    resume={resume} 
+                    onView={() => handleViewResume(resume)}
+                  />
+                ))}
+                
+                {filteredResumes.length === 0 && (
+                  <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                    <div className="rounded-full bg-muted p-3 mb-3">
+                      <Search className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-medium">没有找到简历</h3>
+                    <p className="text-muted-foreground mt-1 max-w-md">
+                      未找到匹配的简历。尝试调整过滤条件或上传新的简历。
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -1,9 +1,10 @@
-
 import React from 'react';
-import { Resume } from '@/types';
+import { Resume } from '@/services/resumeService';
 import { FileText, Clock, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { resumeService } from '@/services/resumeService';
+import { toast } from '@/components/ui/use-toast';
 
 interface ResumeCardProps {
   resume: Resume;
@@ -11,7 +12,7 @@ interface ResumeCardProps {
 }
 
 const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -41,6 +42,20 @@ const getStatusColor = (status: Resume['status']) => {
 };
 
 export const ResumeCard: React.FC<ResumeCardProps> = ({ resume, onView }) => {
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      await resumeService.downloadResume(resume.fileUrl, resume.fileName);
+    } catch (error) {
+      console.error('下载失败:', error);
+      toast({
+        title: "下载失败",
+        description: "无法下载文件，请稍后重试。",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Card className="hover-scale glass-card overflow-hidden animate-in border border-gray-200">
       <CardContent className="p-0">
@@ -53,18 +68,22 @@ export const ResumeCard: React.FC<ResumeCardProps> = ({ resume, onView }) => {
             <Badge className={`ml-2 ${getStatusColor(resume.status)}`}>
               <span className="flex items-center gap-1">
                 {getStatusIcon(resume.status)}
-                {resume.status}
+                {{
+                  'pending': '待审核',
+                  'reviewed': '已审阅',
+                  'approved': '已批准'
+                }[resume.status]}
               </span>
             </Badge>
           </div>
           <div className="flex flex-wrap gap-y-2 items-center text-sm">
             <span className="flex items-center gap-1.5 text-muted-foreground">
               <FileText size={14} />
-              Uploaded {formatDate(resume.uploadedAt)}
+              上传时间 {formatDate(resume.uploadedAt)}
             </span>
             {resume.comments && resume.comments.length > 0 && (
               <Badge variant="outline" className="ml-auto">
-                {resume.comments.length} comment{resume.comments.length !== 1 ? 's' : ''}
+                {resume.comments.length} 条评论
               </Badge>
             )}
           </div>
@@ -74,15 +93,14 @@ export const ResumeCard: React.FC<ResumeCardProps> = ({ resume, onView }) => {
             className="flex-1 py-2.5 text-center text-sm font-medium text-primary hover:bg-muted/50 transition-colors"
             onClick={onView}
           >
-            View
+            查看
           </button>
-          <a 
-            href={resume.fileUrl} 
+          <button 
             className="flex-1 py-2.5 text-center text-sm font-medium text-primary hover:bg-muted/50 transition-colors"
-            download={resume.fileName}
+            onClick={handleDownload}
           >
-            Download
-          </a>
+            下载
+          </button>
         </div>
       </CardContent>
     </Card>
