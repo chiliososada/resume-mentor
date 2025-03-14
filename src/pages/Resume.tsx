@@ -121,27 +121,6 @@ const ResumePage = () => {
   };
 
   const handleDownloadTemplate = async () => {
-    // try {
-    //   setLoading(true);
-    //   // 获取模板URL
-    //   const response = await resumeService.getTemplate();
-      
-    //   if (!response.templateUrl) {
-    //     throw new Error('模板URL无效');
-    //   }
-      
-    //   // 提取文件名
-    //   const fileName = response.templateUrl.split('/').pop() || 'resume_template.xlsx';
-      
-    //   // 使用已有的下载方法，而不是window.open
-    //   await resumeService.downloadResume(response.templateUrl, fileName);
-      
-    //   toast({
-    //     title: "下载成功",
-    //     description: "简历模板已开始下载。",
-    //   });
-    // } 
-    
     try {
       // 从fileUrl中提取GUID文件名
       const fileName = "resume_template.xlsx";

@@ -157,7 +157,25 @@ export const resumeService = {
       throw error;
     }
   },
-  
+
+  //评论和更新状态
+   reviewResume: async (
+    resumeId: string, 
+    status: Resume['status'], 
+    comment?: string
+  ): Promise<{ message: string }> => {
+    // 映射前端状态到后端枚举
+    const backendStatus = {
+      'pending': 0,   // Pending
+      'reviewed': 1,  // Approved
+      'approved': 2   // Rejected
+    }[status];
+
+    return apiRequest(`/Resume/${resumeId}/review`, "POST", { 
+      status: backendStatus, 
+      comments: comment || '' 
+    });
+  },
   // 删除简历
   deleteResume: async (id: number): Promise<{ message: string }> => {
     return apiRequest(`/Resume/${id}`, "DELETE");

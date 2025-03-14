@@ -83,16 +83,46 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
     setCurrentStatus(newStatus as Resume['status']);
   };
 
-  const saveChanges = () => {
-    onStatusChange(resume.id, currentStatus);
-  };
+  const saveChanges = async () => {
+    try {
+      // 使用 reviewResume 方法同时更新状态和可能的评论
+      await resumeService.reviewResume(
+        resume.id, 
+        currentStatus, 
+        newComment.trim() || undefined
+      );
+      
+      // 更新本地状态
+      onStatusChange(resume.id, currentStatus);
+      
+      toast({
+        title: "简历审核成功",
+        description: "简历状态和评论已更新。"
+      });
 
-  const handleAddComment = () => {
-    if (newComment.trim() && onAddComment) {
-      onAddComment(resume.id, newComment.trim());
+      // 如果有新评论，也触发评论更新
+      if (newComment.trim() && onAddComment) {
+        onAddComment(resume.id, newComment.trim());
+      }
+
+      // 清空评论输入
       setNewComment('');
+    } catch (error) {
+      console.error("更新简历失败:", error);
+      toast({
+        title: "更新失败",
+        description: "无法更新简历，请重试。",
+        variant: "destructive"
+      });
     }
   };
+
+  // const handleAddComment = () => {
+  //   if (newComment.trim() && onAddComment) {
+  //     onAddComment(resume.id, newComment.trim());
+  //     setNewComment('');
+  //   }
+  // };
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -207,7 +237,7 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
               />
             </div>
             <Button 
-              onClick={handleAddComment} 
+              onClick={saveChanges} 
               className="w-full flex items-center gap-2"
               disabled={!newComment.trim()}
             >
@@ -227,13 +257,14 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
               <Eye size={16} />
               查看
             </Button>
-            <ResumeDownloadButton 
-  resume={resume} 
-  className="flex items-center gap-1 px-3 py-2 rounded-md border border-input bg-background"
->
-  <FileDown size={16} />
-  <span>下载</span>
-</ResumeDownloadButton>
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-1"
+              onClick={handleDownload}
+            >
+              <FileDown size={16} />
+              下载
+            </Button>
           </div>
           <Button onClick={saveChanges}>保存状态</Button>
         </DialogFooter>
