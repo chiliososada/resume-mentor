@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -7,17 +7,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { User, Lock } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { profileService, ProfileData } from '@/services/profileService';
+import { authService, ChangePasswordRequest } from '@/services/authService';
 
 const SettingsPage = () => {
-  const [user, setUser] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    birthDate: '1990-01-01',
-    birthPlace: 'New York, USA',
-    introduction: 'I am a software developer with 5 years of experience in web development.',
-    hobbies: 'Reading, hiking, and coding',
-    avatar: '',
+  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<ProfileData>({
+    fullName: '',
+    birthDate: '',
+    birthPlace: '',
+    introduction: '',
+    hobbies: '',
   });
   
   const [passwords, setPasswords] = useState({
@@ -26,15 +27,54 @@ const SettingsPage = () => {
     confirm: '',
   });
   
-  const handleProfileUpdate = (e: React.FormEvent) => {
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setIsLoading(true);
+        const profileData = await profileService.getProfile();
+        setUser(profileData);
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+        toast({
+          title: "Error loading profile",
+          description: "Failed to load your profile information. Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchProfile();
+  }, [toast]);
+  
+  const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Profile updated",
-      description: "Your profile information has been updated successfully.",
-    });
+    
+    try {
+      setIsLoading(true);
+      
+      const response = await profileService.updateProfile(user);
+      
+      toast({
+        title: "Profile updated",
+        description: response.message || "Your profile information has been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Profile update error:', error);
+      toast({
+        title: "Update failed",
+        description: "An error occurred while updating your profile.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
-  const handlePasswordUpdate = (e: React.FormEvent) => {
+  const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (passwords.new !== passwords.confirm) {
@@ -55,16 +95,56 @@ const SettingsPage = () => {
       return;
     }
     
-    toast({
-      title: "Password updated",
-      description: "Your password has been updated successfully.",
-    });
+    try {
+      setIsLoading(true);
+      
+      const passwordData: ChangePasswordRequest = {
+        currentPassword: passwords.current,
+        newPassword: passwords.new
+      };
+      
+      const response = await authService.changePassword(passwordData);
+      
+      toast({
+        title: "Password updated",
+        description: response.message || "Your password has been updated successfully.",
+      });
+      
+      setPasswords({
+        current: '',
+        new: '',
+        confirm: '',
+      });
+    } catch (error) {
+      console.error('Password update error:', error);
+      // Error is already handled in the API service
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
     
-    setPasswords({
-      current: '',
-      new: '',
-      confirm: '',
-    });
+    const file = e.target.files[0];
+    
+    try {
+      setIsLoading(true);
+      
+      const response = await profileService.uploadAvatar(file);
+      
+      toast({
+        title: "Avatar uploaded",
+        description: response.message || "Your avatar has been uploaded successfully.",
+      });
+      
+      // You might want to update the avatar display here
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      // Error is already handled in the API service
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -92,31 +172,31 @@ const SettingsPage = () => {
               <form onSubmit={handleProfileUpdate} className="space-y-4">
                 <div className="flex flex-col items-center mb-6">
                   <Avatar className="h-24 w-24 mb-4">
+                    <AvatarImage src="" alt="Avatar" />
                     <AvatarFallback className="text-2xl">
-                      {user.name.charAt(0)}
+                      {user.fullName?.charAt(0) || '?'}
                     </AvatarFallback>
                   </Avatar>
-                  <Button variant="outline" size="sm">
-                    Change Avatar
-                  </Button>
+                  <input
+                    type="file"
+                    id="avatar-upload"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                  />
+                  <label htmlFor="avatar-upload">
+                    <Button variant="outline" size="sm" className="cursor-pointer" type="button">
+                      Change Avatar
+                    </Button>
+                  </label>
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
                   <Input
                     id="name"
-                    value={user.name}
-                    onChange={(e) => setUser({ ...user, name: e.target.value })}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={user.email}
-                    onChange={(e) => setUser({ ...user, email: e.target.value })}
+                    value={user.fullName}
+                    onChange={(e) => setUser({ ...user, fullName: e.target.value })}
                   />
                 </div>
                 
@@ -125,7 +205,7 @@ const SettingsPage = () => {
                   <Input
                     id="birthDate"
                     type="date"
-                    value={user.birthDate}
+                    value={user.birthDate || ''}
                     onChange={(e) => setUser({ ...user, birthDate: e.target.value })}
                   />
                 </div>
@@ -134,7 +214,7 @@ const SettingsPage = () => {
                   <Label htmlFor="birthPlace">Birth Place</Label>
                   <Input
                     id="birthPlace"
-                    value={user.birthPlace}
+                    value={user.birthPlace || ''}
                     onChange={(e) => setUser({ ...user, birthPlace: e.target.value })}
                   />
                 </div>
@@ -144,7 +224,7 @@ const SettingsPage = () => {
                   <Textarea
                     id="introduction"
                     rows={3}
-                    value={user.introduction}
+                    value={user.introduction || ''}
                     onChange={(e) => setUser({ ...user, introduction: e.target.value })}
                   />
                 </div>
@@ -154,13 +234,13 @@ const SettingsPage = () => {
                   <Textarea
                     id="hobbies"
                     rows={2}
-                    value={user.hobbies}
+                    value={user.hobbies || ''}
                     onChange={(e) => setUser({ ...user, hobbies: e.target.value })}
                   />
                 </div>
                 
-                <Button type="submit" className="w-full">
-                  Save Changes
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Saving...' : 'Save Changes'}
                 </Button>
               </form>
             </CardContent>
@@ -211,9 +291,9 @@ const SettingsPage = () => {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={!passwords.current || !passwords.new || !passwords.confirm}
+                  disabled={isLoading || !passwords.current || !passwords.new || !passwords.confirm}
                 >
-                  Update Password
+                  {isLoading ? 'Updating...' : 'Update Password'}
                 </Button>
               </form>
             </CardContent>

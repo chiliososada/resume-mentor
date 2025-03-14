@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Users, ArrowUp, ArrowDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { dashboardService, DashboardData } from '@/services/dashboardService';
 
 const DashboardCard = ({ 
   title, 
@@ -44,6 +45,28 @@ const DashboardCard = ({
 );
 
 const Dashboard = () => {
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        const data = await dashboardService.getDashboardData();
+        setDashboardData(data);
+        setError(null);
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+        setError('Failed to load dashboard data. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
   return (
     <div className="page-transition">
       <div className="flex flex-col gap-6">
@@ -54,24 +77,73 @@ const Dashboard = () => {
           </p>
         </div>
         
-        <div className="grid gap-4 md:grid-cols-2">
-          <DashboardCard
-            title="Resumes"
-            value={12}
-            description="3 pending review"
-            icon={FileText}
-            change={{ value: 12, positive: true }}
-            link="/resume"
-          />
-          <DashboardCard
-            title="Interview Questions"
-            value={42}
-            description="8 new this week"
-            icon={Users}
-            change={{ value: 8, positive: true }}
-            link="/interview"
-          />
-        </div>
+        {isLoading ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="glass-card hover-scale animate-pulse">
+              <div className="h-32"></div>
+            </Card>
+            <Card className="glass-card hover-scale animate-pulse">
+              <div className="h-32"></div>
+            </Card>
+          </div>
+        ) : error ? (
+          <Card className="glass-card p-6 text-center">
+            <p className="text-red-500">{error}</p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </Button>
+          </Card>
+        ) : dashboardData ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            <DashboardCard
+              title="Resumes"
+              value={dashboardData.resumeStats.total}
+              description={`${dashboardData.resumeStats.pending} pending review`}
+              icon={FileText}
+              change={{ value: 
+                dashboardData.resumeStats.total > 0 
+                  ? Math.round((dashboardData.resumeStats.approved / dashboardData.resumeStats.total) * 100) 
+                  : 0, 
+                positive: true 
+              }}
+              link="/resume"
+            />
+            <DashboardCard
+              title="Interview Questions"
+              value={dashboardData.questionStats.total}
+              description={`${dashboardData.questionStats.recent} new this week`}
+              icon={Users}
+              change={{ 
+                value: dashboardData.questionStats.recent, 
+                positive: dashboardData.questionStats.recent > 0 
+              }}
+              link="/interview"
+            />
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            <DashboardCard
+              title="Resumes"
+              value={12}
+              description="3 pending review"
+              icon={FileText}
+              change={{ value: 12, positive: true }}
+              link="/resume"
+            />
+            <DashboardCard
+              title="Interview Questions"
+              value={42}
+              description="8 new this week"
+              icon={Users}
+              change={{ value: 8, positive: true }}
+              link="/interview"
+            />
+          </div>
+        )}
         
         <Card className="glass-card overflow-hidden">
           <CardHeader>

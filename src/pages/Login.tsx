@@ -15,23 +15,22 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate network delay
-    setTimeout(() => {
-      const success = login(username, password);
+    try {
+      const success = await login(username, password);
       
       if (success) {
-        toast.success('Login successful');
         navigate('/');
-      } else {
-        toast.error('Invalid credentials. Try using admin/admin');
       }
-      
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('An unexpected error occurred. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   return (
