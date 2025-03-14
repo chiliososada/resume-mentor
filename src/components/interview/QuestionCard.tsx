@@ -57,7 +57,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
   const getStatusBadge = (status: InterviewQuestion['status']) => {
     if (editingStatus) {
       return (
-        <div className="flex gap-1">
+        <div className="flex gap-1 items-center">
           <Badge 
             className={`cursor-pointer bg-green-50 text-green-700 border-green-200 ${status === 'approved' ? 'ring-1 ring-green-700' : ''}`}
             onClick={() => handleStatusChange('approved')}
@@ -79,6 +79,14 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
             <X size={12} className="mr-1" />
             Rejected
           </Badge>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6 ml-1" 
+            onClick={() => setEditingStatus(false)}
+          >
+            <X size={14} />
+          </Button>
         </div>
       );
     }
