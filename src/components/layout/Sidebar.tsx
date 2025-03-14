@@ -24,10 +24,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
     <div className="h-full bg-sidebar flex flex-col overflow-hidden">
       <div className="py-6 px-4 flex items-center justify-center">
         {!collapsed ? (
-          <h1 className="text-white text-xl font-medium tracking-tight animate-fade-in">Resume Mentor</h1>
+          <h1 className="text-white text-xl font-medium tracking-tight animate-fade-in">ToYouSoftEms</h1>
         ) : (
           <div className="w-10 h-10 rounded-xl bg-sidebar-accent flex items-center justify-center">
-            <span className="text-white font-semibold text-lg">R</span>
+            <span className="text-white font-semibold text-lg">T</span>
           </div>
         )}
       </div>
