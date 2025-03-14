@@ -227,14 +227,13 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
               <Eye size={16} />
               查看
             </Button>
-            <Button 
-              variant="outline" 
-              className="flex items-center gap-1"
-              onClick={handleDownload}
-            >
-              <FileDown size={16} />
-              下载
-            </Button>
+            <ResumeDownloadButton 
+  resume={resume} 
+  className="flex items-center gap-1 px-3 py-2 rounded-md border border-input bg-background"
+>
+  <FileDown size={16} />
+  <span>下载</span>
+</ResumeDownloadButton>
           </div>
           <Button onClick={saveChanges}>保存状态</Button>
         </DialogFooter>

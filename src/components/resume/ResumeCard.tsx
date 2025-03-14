@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { resumeService } from '@/services/resumeService';
 import { toast } from '@/components/ui/use-toast';
+import { ResumeDownloadButton } from './ResumeDownloadButton';
 
 interface ResumeCardProps {
   resume: Resume;
@@ -95,12 +96,14 @@ export const ResumeCard: React.FC<ResumeCardProps> = ({ resume, onView }) => {
           >
             查看
           </button>
-          <button 
+          {/* <button 
             className="flex-1 py-2.5 text-center text-sm font-medium text-primary hover:bg-muted/50 transition-colors"
             onClick={handleDownload}
           >
             下载
-          </button>
+          </button> */}
+
+<ResumeDownloadButton resume={resume} />
         </div>
       </CardContent>
     </Card>
