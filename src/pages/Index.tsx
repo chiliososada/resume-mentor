@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Users, Calendar, BookOpen, ArrowUp, ArrowDown } from 'lucide-react';
+import { FileText, Users, ArrowUp, ArrowDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const DashboardCard = ({ 
@@ -54,7 +54,7 @@ const Dashboard = () => {
           </p>
         </div>
         
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2">
           <DashboardCard
             title="Resumes"
             value={12}
@@ -71,70 +71,25 @@ const Dashboard = () => {
             change={{ value: 8, positive: true }}
             link="/interview"
           />
-          <DashboardCard
-            title="Attendance Rate"
-            value="95%"
-            description="Last 30 days"
-            icon={Calendar}
-            change={{ value: 2, positive: true }}
-            link="/attendance"
-          />
-          <DashboardCard
-            title="Active Courses"
-            value={4}
-            description="1 starting soon"
-            icon={BookOpen}
-            link="/courses"
-          />
         </div>
         
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="glass-card md:col-span-2 overflow-hidden">
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Your most recent interactions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-start gap-4 animate-in" style={{ animationDelay: `${i * 100}ms` }}>
-                    <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center">
-                      <Users className="h-5 w-5 text-foreground/80" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">New interview question added</p>
-                      <p className="text-sm text-muted-foreground">
-                        "How would you design a system for real-time notifications?"
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">2 hours ago</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="glass-card overflow-hidden">
-            <CardHeader>
-              <CardTitle>Upcoming Events</CardTitle>
-              <CardDescription>Your schedule for the week</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[1, 2].map((i) => (
-                  <div 
-                    key={i} 
-                    className="p-3 rounded-lg border animate-in" 
-                    style={{ animationDelay: `${i * 100}ms` }}
-                  >
-                    <p className="text-sm font-medium">Mock Interview Session</p>
-                    <p className="text-xs text-muted-foreground mt-1">Tomorrow, 2:00 PM</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="glass-card overflow-hidden">
+          <CardHeader>
+            <CardTitle>Welcome to ToYouSoftEms</CardTitle>
+            <CardDescription>Employee Management System</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p>ToYouSoftEms helps you manage your professional development journey.</p>
+              <p>Use the sidebar to navigate between different sections:</p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li>Review and update your <strong>Resume</strong></li>
+                <li>Prepare for <strong>Interviews</strong> with practice questions</li>
+                <li>Manage your <strong>Settings</strong> and profile information</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

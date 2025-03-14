@@ -1,7 +1,9 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { FileText, Users, BookOpen, Calendar, Settings, Home, LogOut } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { FileText, Users, Settings, Home, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -9,16 +11,23 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
   const location = useLocation();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  
   const isActive = (path: string) => location.pathname === path;
 
   const navigation = [
     { name: 'Dashboard', path: '/', icon: Home },
     { name: 'Resume', path: '/resume', icon: FileText },
     { name: 'Interview', path: '/interview', icon: Users },
-    { name: 'Attendance', path: '/attendance', icon: Calendar },
-    { name: 'Courses', path: '/courses', icon: BookOpen },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
+  
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully');
+    navigate('/login');
+  };
 
   return (
     <div className="h-full bg-sidebar flex flex-col overflow-hidden">
@@ -53,7 +62,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
       </nav>
       
       <div className="py-6 px-2">
-        <div className={`sidebar-link ${collapsed ? 'justify-center' : ''}`}>
+        <div 
+          className={`sidebar-link ${collapsed ? 'justify-center' : ''} cursor-pointer`}
+          onClick={handleLogout}
+        >
           <LogOut size={collapsed ? 20 : 18} />
           {!collapsed && <span>Sign Out</span>}
         </div>

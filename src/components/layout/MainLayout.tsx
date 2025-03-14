@@ -1,25 +1,14 @@
 
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { Outlet } from 'react-router-dom';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const MainLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const { logout } = useAuth();
-  const navigate = useNavigate();
 
   const toggleSidebar = () => {
     setCollapsed(!collapsed);
-  };
-
-  const handleLogout = () => {
-    logout();
-    toast.success('Logged out successfully');
-    navigate('/login');
   };
 
   return (
@@ -41,10 +30,6 @@ export const MainLayout = () => {
           >
             {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
-          
-          <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
-            <LogOut size={16} /> Sign Out
-          </Button>
         </div>
         
         <main className="flex-1 overflow-auto p-6 md:p-8 lg:p-10">

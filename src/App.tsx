@@ -8,8 +8,6 @@ import { MainLayout } from "./components/layout/MainLayout";
 import Dashboard from "./pages/Index";
 import ResumePage from "./pages/Resume";
 import InterviewPage from "./pages/Interview";
-import AttendancePage from "./pages/Attendance";
-import CoursesPage from "./pages/Courses";
 import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
@@ -46,8 +44,6 @@ const AppRoutes = () => {
         <Route path="/" element={<Dashboard />} />
         <Route path="/resume" element={<ResumePage />} />
         <Route path="/interview" element={<InterviewPage />} />
-        <Route path="/attendance" element={<AttendancePage />} />
-        <Route path="/courses" element={<CoursesPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
       

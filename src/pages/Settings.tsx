@@ -5,13 +5,18 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, Lock, Bell, Globe, Mail } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { User, Lock } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 const SettingsPage = () => {
   const [user, setUser] = useState({
     name: 'John Doe',
     email: 'john.doe@example.com',
+    birthDate: '1990-01-01',
+    birthPlace: 'New York, USA',
+    introduction: 'I am a software developer with 5 years of experience in web development.',
+    hobbies: 'Reading, hiking, and coding',
     avatar: '',
   });
   
@@ -19,13 +24,6 @@ const SettingsPage = () => {
     current: '',
     new: '',
     confirm: '',
-  });
-  
-  const [notifications, setNotifications] = useState({
-    email: true,
-    browser: true,
-    updates: false,
-    marketing: false,
   });
   
   const handleProfileUpdate = (e: React.FormEvent) => {
@@ -66,14 +64,6 @@ const SettingsPage = () => {
       current: '',
       new: '',
       confirm: '',
-    });
-  };
-  
-  const handleNotificationUpdate = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast({
-      title: "Notification settings updated",
-      description: "Your notification preferences have been saved.",
     });
   };
 
@@ -127,6 +117,45 @@ const SettingsPage = () => {
                     type="email"
                     value={user.email}
                     onChange={(e) => setUser({ ...user, email: e.target.value })}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="birthDate">Birth Date</Label>
+                  <Input
+                    id="birthDate"
+                    type="date"
+                    value={user.birthDate}
+                    onChange={(e) => setUser({ ...user, birthDate: e.target.value })}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="birthPlace">Birth Place</Label>
+                  <Input
+                    id="birthPlace"
+                    value={user.birthPlace}
+                    onChange={(e) => setUser({ ...user, birthPlace: e.target.value })}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="introduction">Introduction</Label>
+                  <Textarea
+                    id="introduction"
+                    rows={3}
+                    value={user.introduction}
+                    onChange={(e) => setUser({ ...user, introduction: e.target.value })}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="hobbies">Hobbies</Label>
+                  <Textarea
+                    id="hobbies"
+                    rows={2}
+                    value={user.hobbies}
+                    onChange={(e) => setUser({ ...user, hobbies: e.target.value })}
                   />
                 </div>
                 
@@ -185,109 +214,6 @@ const SettingsPage = () => {
                   disabled={!passwords.current || !passwords.new || !passwords.confirm}
                 >
                   Update Password
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-          
-          <Card className="glass-card animate-in md:col-span-2">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Bell size={18} className="text-muted-foreground" />
-                <CardTitle>Notification Settings</CardTitle>
-              </div>
-              <CardDescription>
-                Manage how and when you receive notifications
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleNotificationUpdate} className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Notification Channels</h3>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Mail size={18} className="text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">Email Notifications</p>
-                        <p className="text-xs text-muted-foreground">
-                          Receive notifications via email
-                        </p>
-                      </div>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={notifications.email}
-                        onChange={() => setNotifications({ ...notifications, email: !notifications.email })}
-                      />
-                      <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                    </label>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Globe size={18} className="text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">Browser Notifications</p>
-                        <p className="text-xs text-muted-foreground">
-                          Receive notifications in your browser
-                        </p>
-                      </div>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={notifications.browser}
-                        onChange={() => setNotifications({ ...notifications, browser: !notifications.browser })}
-                      />
-                      <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Notification Types</h3>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Product Updates</p>
-                      <p className="text-xs text-muted-foreground">
-                        Receive notifications about new features and updates
-                      </p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={notifications.updates}
-                        onChange={() => setNotifications({ ...notifications, updates: !notifications.updates })}
-                      />
-                      <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                    </label>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Marketing</p>
-                      <p className="text-xs text-muted-foreground">
-                        Receive marketing communications and promotions
-                      </p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={notifications.marketing}
-                        onChange={() => setNotifications({ ...notifications, marketing: !notifications.marketing })}
-                      />
-                      <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                    </label>
-                  </div>
-                </div>
-                
-                <Button type="submit" className="w-full md:w-auto">
-                  Save Notification Settings
                 </Button>
               </form>
             </CardContent>
