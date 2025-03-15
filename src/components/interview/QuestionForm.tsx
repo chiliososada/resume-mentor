@@ -60,7 +60,7 @@ export const QuestionForm: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
   // 当组件挂载时，获取职位列表和设置默认值
   useEffect(() => {
     if (isExpanded) {
-      fetchPositions();
+     // fetchPositions();
     }
     
     if (isTeacherOrAdmin) {
