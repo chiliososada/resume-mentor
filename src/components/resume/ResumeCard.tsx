@@ -84,7 +84,8 @@ export const ResumeCard: React.FC<ResumeCardProps> = ({ resume, onView }) => {
             </span>
             {resume.comments && resume.comments.length > 0 && (
               <Badge variant="outline" className="ml-auto">
-                {resume.comments.length} 条评论
+                {/* {resume.comments.length} 评价 */}
+                有评价
               </Badge>
             )}
           </div>

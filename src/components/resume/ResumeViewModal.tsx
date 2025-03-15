@@ -97,7 +97,7 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
       
       toast({
         title: "简历审核成功",
-        description: "简历状态和评论已更新。"
+        description: "简历状态和评价已更新。"
       });
 
       // 如果有新评论，也触发评论更新
@@ -206,9 +206,28 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
               </SelectContent>
             </Select>
           </div>
-
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium">评论</span>
+  <span className="text-sm font-medium">最新评价</span>
+  <div className="border rounded-md p-3">
+    {resume.comments && resume.comments.length > 0 ? (
+      <div className="bg-muted/50 rounded-md p-3">
+        <div className="text-sm font-medium mb-2">
+          {resume.comments[resume.comments.length - 1].createdBy}
+        </div>
+        <div className="text-base font-normal leading-relaxed">
+          {resume.comments[resume.comments.length - 1].content}
+        </div>
+        <div className="text-xs text-muted-foreground mt-2">
+          {formatDate(resume.comments[resume.comments.length - 1].createdAt)}
+        </div>
+      </div>
+    ) : (
+      <p className="text-sm text-muted-foreground">暂无评价</p>
+    )}
+  </div>
+</div>
+          {/* <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium">评价</span>
             <div className="max-h-40 overflow-y-auto space-y-2 border rounded-md p-2">
               {resume.comments && resume.comments.length > 0 ? (
                 resume.comments.map((comment) => (
@@ -219,21 +238,22 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
                       {formatDate(comment.createdAt)}
                     </div>
                   </div>
-                ))
+                )
+              )
               ) : (
-                <p className="text-sm text-muted-foreground">暂无评论</p>
+                <p className="text-sm text-muted-foreground">暂无评价</p>
               )}
             </div>
-          </div>
+          </div> */}
 
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium">添加评论</span>
+            <span className="text-sm font-medium">添加评价并修改状态</span>
             <div className="flex gap-2">
               <Textarea 
-                placeholder="写下你的评论..."
+                placeholder="请评价..."
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                className="min-h-[80px] resize-none"
+                className="min-h-[200px] resize-none"
               />
             </div>
             <Button 
@@ -242,13 +262,13 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
               disabled={!newComment.trim()}
             >
               <Send size={16} />
-              添加评论
+              提交评价和状态
             </Button>
           </div>
         </div>
 
         <DialogFooter className="flex sm:justify-between gap-2">
-          <div className="flex gap-2">
+          {/* <div className="flex gap-2">
             <Button 
               variant="outline" 
               className="flex items-center gap-1"
@@ -265,8 +285,8 @@ export const ResumeViewModal: React.FC<ResumeViewModalProps> = ({
               <FileDown size={16} />
               下载
             </Button>
-          </div>
-          <Button onClick={saveChanges}>保存状态</Button>
+          </div> */}
+          {/* <Button onClick={saveChanges}>保存状态或评价</Button> */}
         </DialogFooter>
       </DialogContent>
     </Dialog>

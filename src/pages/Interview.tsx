@@ -1,82 +1,112 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { QuestionCard } from '@/components/interview/QuestionCard';
 import { QuestionForm } from '@/components/interview/QuestionForm';
-import { InterviewQuestion } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, Check, X, AlertCircle } from 'lucide-react';
+import { Search, Filter, Check, X, AlertCircle, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { questionService, Question } from '@/services/questionService';
+import { toast } from '@/components/ui/use-toast';
 
-const mockQuestions: InterviewQuestion[] = [
-  {
-    id: '1',
-    question: 'What is the difference between var, let, and const in JavaScript?',
-    answer: 'var declarations are globally scoped or function scoped while let and const are block scoped. var variables can be updated and re-declared within its scope; let variables can be updated but not re-declared; const variables can neither be updated nor re-declared. They are all hoisted to the top of their scope but while var variables are initialized with undefined, let and const variables are not initialized.',
-    category: 'Technical',
-    company: 'Google',
-    isInternal: false,
-    status: 'approved',
-    createdBy: 'user1',
-    createdAt: new Date(2023, 5, 15),
-    comments: [
-      {
-        id: 'c1',
-        content: 'Great explanation! Maybe add something about temporal dead zone for let and const.',
-        createdBy: 'teacher1',
-        createdAt: new Date(2023, 5, 16),
-      },
-    ],
-  },
-  {
-    id: '2',
-    question: 'Tell me about a time you had to deal with a difficult team member.',
-    answer: 'I once worked with a team member who consistently missed deadlines. Instead of escalating immediately, I scheduled a private conversation to understand the challenges they were facing. They revealed they were overwhelmed with their workload. I helped them prioritize tasks and shared some time management techniques. We also agreed to have quick check-ins twice a week. Over the next month, their performance improved significantly, and we developed a much better working relationship.',
-    category: 'Behavioral',
-    company: 'Amazon',
-    isInternal: true,
-    status: 'pending',
-    createdBy: 'user2',
-    createdAt: new Date(2023, 6, 1),
-    comments: [],
-  },
-  {
-    id: '3',
-    question: 'How would you design a URL shortening service like bit.ly?',
-    answer: 'I would design a system with 1) A service to generate unique short URLs - using techniques like hashing the original URL with MD5 and taking the first 6-8 characters, or using a counter-based approach with base62 encoding. 2) A database to store mappings between short and original URLs. 3) A redirection service that looks up the original URL when a user accesses a short URL. 4) Analytics capabilities to track clicks and user engagement. The system should handle high read-to-write ratio and ensure short URLs remain unique.',
-    category: 'System Design',
-    company: 'Microsoft',
-    isInternal: false,
-    status: 'approved',
-    createdBy: 'user3',
-    createdAt: new Date(2023, 6, 5),
-    comments: [],
-  },
-  {
-    id: '4',
-    question: 'What is a closure in JavaScript and how would you use it?',
-    answer: 'A closure is the combination of a function bundled together with references to its surrounding state (the lexical environment). In other words, a closure gives you access to an outer function\'s scope from an inner function. Closures are useful for data privacy, creating function factories, and implementing the module pattern. For example, you can use closures to create private variables and methods in JavaScript.',
-    category: 'Technical',
-    company: 'Facebook',
-    isInternal: false,
-    status: 'rejected',
-    createdBy: 'user4',
-    createdAt: new Date(2023, 6, 10),
-    comments: [
-      {
-        id: 'c2',
-        content: 'Could you provide a code example to illustrate this concept better?',
-        createdBy: 'teacher2',
-        createdAt: new Date(2023, 6, 11),
-      },
-    ],
-  },
-];
+const statusToNumber = (status: string | number): number => {
+  if (typeof status === 'number') {
+    return status;
+  }
+  
+  switch (status.toLowerCase()) {
+    case 'approved': return 1;
+    case 'rejected': return 2;
+    case 'pending':
+    default: return 0;
+  }
+};
 
 const InterviewPage = () => {
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  
+  // 用于跟踪活跃的分类
+  const [categories, setCategories] = useState<string[]>([]);
+  
+  const fetchQuestions = async () => {
+    try {
+      setLoading(true);
+      
+      const filter: Record<string, any> = {};
+      
+      // 搜索关键词
+      if (searchQuery) {
+        filter.Keyword = searchQuery;
+      }
+      
+      // 状态过滤
+      if (statusFilter.length > 0) {
+        // 转换状态名称为数字
+        const statusValues = statusFilter.map(status => {
+          switch (status) {
+            case 'approved': return 1;
+            case 'rejected': return 2;
+            default: return 0; // pending
+          }
+        });
+        
+        if (statusValues.length === 1) {
+          filter.Status = statusValues[0];
+        }
+      }
+      
+      // 获取问题列表
+      const response = await questionService.getQuestions(
+        currentPage,
+        pageSize,
+        'CreatedAt', // 默认按创建时间排序
+        filter
+      );
+      
+      setQuestions(response.items);
+      setTotalPages(response.pageCount);
+      setTotalCount(response.totalCount);
+      
+      // 提取并记录所有分类（使用关键词作为分类）
+      const extractedCategories = Array.from(
+        new Set(response.items.map(q => q.caseName || '未分类'))
+      );
+      setCategories(prev => {
+        const uniqueCategories = Array.from(new Set([...prev, ...extractedCategories]));
+        return uniqueCategories.filter(c => c);
+      });
+      
+    } catch (error) {
+      console.error('加载问题列表失败:', error);
+      toast({
+        title: "加载失败",
+        description: "无法加载问题列表，请稍后重试。",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // 初始加载和刷新时获取问题
+  useEffect(() => {
+    fetchQuestions();
+  }, [currentPage, pageSize, refreshTrigger]);
+  
+  // 当过滤条件改变时重置到第一页并重新加载
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchQuestions();
+  }, [statusFilter, categoryFilter, searchQuery]);
   
   const toggleCategoryFilter = (category: string) => {
     if (categoryFilter.includes(category)) {
@@ -94,65 +124,102 @@ const InterviewPage = () => {
     }
   };
   
-  const filteredQuestions = mockQuestions.filter(question => {
-    const matchesSearch = question.question.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         question.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         question.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (question.company && question.company.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    const matchesCategory = categoryFilter.length === 0 || 
-                           categoryFilter.includes(question.category);
-    
-    const matchesStatus = statusFilter.length === 0 || 
-                         statusFilter.includes(question.status);
-    
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
   
-  const categories = Array.from(new Set(mockQuestions.map(q => q.category)));
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchQuestions();
+  };
+  
+  const refreshQuestions = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+  
+  const handlePageChange = (pageNumber: number) => {
+    if (pageNumber < 1 || pageNumber > totalPages) return;
+    setCurrentPage(pageNumber);
+  };
+  
+  // 获取状态显示文本
+  const getStatusText = (status: number): string => {
+    switch (status) {
+      case 1: return '已批准';
+      case 2: return '已拒绝';
+      case 0:
+      default: return '待审核';
+    }
+  };
+  
+  // 根据问题对象构建卡片所需的数据
+  const mapQuestionToCardProps = (question: Question) => {
+    return {
+      id: question.questionID.toString(),
+      question: question.questionText,
+      answer: question.answer || "",
+      category: question.caseName || "未分类",
+      company: question.companyName,
+      isInternal: question.source === 1, // 1 = Company, 0 = Personal
+      status: typeof question.status === 'number' ? question.status : statusToNumber(question.status),
+      createdBy: question.username || "匿名用户",
+      createdAt: new Date(question.createdAt),
+      comments: [], // 评论通常需要额外请求
+    };
+  };
 
   return (
     <div className="page-transition">
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Interview Questions</h1>
+          <h1 className="text-3xl font-bold tracking-tight">面试问题</h1>
           <p className="text-muted-foreground mt-1">
-            Browse, add, and discuss interview questions
+            浏览、添加和讨论面试问题
           </p>
         </div>
         
-        <QuestionForm />
+        <QuestionForm onSuccess={refreshQuestions} />
         
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
               <Input
-                placeholder="Search questions..."
+                placeholder="搜索问题..."
                 className="pl-9"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
               />
             </div>
-            <div className="flex flex-wrap gap-2 items-center">
-              <Filter size={16} className="text-muted-foreground" />
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category) => (
-                  <Badge
-                    key={category}
-                    variant={categoryFilter.includes(category) ? 'default' : 'outline'}
-                    className="cursor-pointer"
-                    onClick={() => toggleCategoryFilter(category)}
-                  >
-                    {category}
-                  </Badge>
-                ))}
-              </div>
+            <Button 
+              type="button" 
+              variant="outline"
+              onClick={refreshQuestions}
+              className="sm:flex-shrink-0"
+            >
+              <RefreshCw size={16} className="mr-2" />
+              刷新
+            </Button>
+          </form>
+          
+          <div className="flex flex-wrap gap-2 items-center">
+            <Filter size={16} className="text-muted-foreground" />
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <Badge
+                  key={category}
+                  variant={categoryFilter.includes(category) ? 'default' : 'outline'}
+                  className="cursor-pointer"
+                  onClick={() => toggleCategoryFilter(category)}
+                >
+                  {category}
+                </Badge>
+              ))}
             </div>
           </div>
           
           <div className="flex gap-2 items-center">
-            <span className="text-sm text-muted-foreground">Status:</span>
+            <span className="text-sm text-muted-foreground">状态:</span>
             <div className="flex gap-2">
               <Badge
                 variant={statusFilter.includes('approved') ? 'default' : 'outline'}
@@ -160,7 +227,7 @@ const InterviewPage = () => {
                 onClick={() => toggleStatusFilter('approved')}
               >
                 <Check size={12} />
-                Approved
+                已批准
               </Badge>
               <Badge
                 variant={statusFilter.includes('pending') ? 'default' : 'outline'}
@@ -168,7 +235,7 @@ const InterviewPage = () => {
                 onClick={() => toggleStatusFilter('pending')}
               >
                 <AlertCircle size={12} />
-                Pending
+                待审核
               </Badge>
               <Badge
                 variant={statusFilter.includes('rejected') ? 'default' : 'outline'}
@@ -176,27 +243,95 @@ const InterviewPage = () => {
                 onClick={() => toggleStatusFilter('rejected')}
               >
                 <X size={12} />
-                Rejected
+                已拒绝
               </Badge>
             </div>
           </div>
           
-          <div className="grid gap-4">
-            {filteredQuestions.map((question) => (
-              <QuestionCard key={question.id} question={question} />
-            ))}
-            
-            {filteredQuestions.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="rounded-full bg-muted p-3 mb-3">
-                  <Search className="h-6 w-6 text-muted-foreground" />
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {questions.length > 0 ? (
+                questions.map((question) => (
+                  <QuestionCard 
+                    key={question.questionID} 
+                    question={mapQuestionToCardProps(question)}
+                    onStatusChange={refreshQuestions}
+                  />
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="rounded-full bg-muted p-3 mb-3">
+                    <Search className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-medium">未找到问题</h3>
+                  <p className="text-muted-foreground mt-1 max-w-md">
+                    我们找不到符合搜索条件的面试问题。请尝试调整过滤条件或添加新问题。
+                  </p>
                 </div>
-                <h3 className="text-lg font-medium">No questions found</h3>
-                <p className="text-muted-foreground mt-1 max-w-md">
-                  We couldn't find any interview questions matching your search criteria. Try adjusting your filters or add a new question.
-                </p>
-              </div>
-            )}
+              )}
+            </div>
+          )}
+          
+          {/* 分页控件 */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-6">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  
+                  {/* 生成页码按钮 */}
+                  {Array.from({ length: Math.min(5, totalPages) }).map((_, index) => {
+                    // 显示当前页及其周围的页码
+                    let pageNumber;
+                    
+                    if (totalPages <= 5) {
+                      // 如果总页数小于等于5，直接显示所有页码
+                      pageNumber = index + 1;
+                    } else if (currentPage <= 3) {
+                      // 如果当前页靠近开始，显示前5页
+                      pageNumber = index + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      // 如果当前页靠近结束，显示最后5页
+                      pageNumber = totalPages - 4 + index;
+                    } else {
+                      // 否则显示当前页及其前后各2页
+                      pageNumber = currentPage - 2 + index;
+                    }
+                    
+                    return (
+                      <PaginationItem key={pageNumber}>
+                        <PaginationLink
+                          isActive={pageNumber === currentPage}
+                          onClick={() => handlePageChange(pageNumber)}
+                        >
+                          {pageNumber}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+          
+          <div className="text-center text-sm text-muted-foreground">
+            共 {totalCount} 个问题，第 {currentPage} 页 / 共 {totalPages} 页
           </div>
         </div>
       </div>

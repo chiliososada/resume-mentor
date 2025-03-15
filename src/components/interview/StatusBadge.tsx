@@ -1,61 +1,95 @@
-
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Check, X, AlertCircle, Edit } from 'lucide-react';
-import { InterviewQuestion } from '@/types';
 import { toast } from '@/components/ui/use-toast';
+import { questionService } from '@/services/questionService';
 
 interface StatusBadgeProps {
-  status: InterviewQuestion['status'];
+  status: number; // 修改为数字类型
+  questionId: number;
+  onStatusChange?: () => void;
 }
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({ status: initialStatus }) => {
-  const [status, setStatus] = React.useState<InterviewQuestion['status']>(initialStatus);
+export const StatusBadge: React.FC<StatusBadgeProps> = ({ 
+  status: initialStatus, 
+  questionId,
+  onStatusChange 
+}) => {
+  const [status, setStatus] = React.useState<number>(initialStatus);
   const [editingStatus, setEditingStatus] = React.useState(false);
+  const [isUpdating, setIsUpdating] = React.useState(false);
 
-  const handleStatusChange = (newStatus: InterviewQuestion['status']) => {
-    setStatus(newStatus);
-    setEditingStatus(false);
+  const handleStatusChange = async (newStatus: number) => {
+    if (isUpdating) return;
     
-    // In a real app, this would update the status via an API
-    console.log(`Changing status from ${initialStatus} to ${newStatus}`);
-    
-    toast({
-      title: "Status updated",
-      description: `Question status changed to ${newStatus}`,
-    });
+    try {
+      setIsUpdating(true);
+      
+      // 调用API更新状态
+      await questionService.approveQuestion(
+        questionId,
+        newStatus,
+        `状态已被用户更改为 ${newStatus}`
+      );
+      
+      setStatus(newStatus);
+      setEditingStatus(false);
+      
+      toast({
+        title: "状态已更新",
+        description: `问题状态已更新为${
+          newStatus === 1 ? '已批准' : 
+          newStatus === 2 ? '已拒绝' : '待审核'
+        }`,
+      });
+      
+      // 如果有状态变更回调则调用
+      if (onStatusChange) {
+        onStatusChange();
+      }
+    } catch (error) {
+      console.error('更新状态失败:', error);
+      toast({
+        title: "更新失败",
+        description: "无法更新问题状态，请重试。",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   if (editingStatus) {
     return (
       <div className="flex gap-1 items-center">
         <Badge 
-          className={`cursor-pointer bg-green-50 text-green-700 border-green-200 ${status === 'approved' ? 'ring-1 ring-green-700' : ''}`}
-          onClick={() => handleStatusChange('approved')}
+          className={`cursor-pointer bg-green-50 text-green-700 border-green-200 ${status === 1 ? 'ring-1 ring-green-700' : ''}`}
+          onClick={() => handleStatusChange(1)}
         >
           <Check size={12} className="mr-1" />
-          Approved
+          已批准
         </Badge>
         <Badge 
-          className={`cursor-pointer bg-yellow-50 text-yellow-700 border-yellow-200 ${status === 'pending' ? 'ring-1 ring-yellow-700' : ''}`}
-          onClick={() => handleStatusChange('pending')}
+          className={`cursor-pointer bg-yellow-50 text-yellow-700 border-yellow-200 ${status === 0 ? 'ring-1 ring-yellow-700' : ''}`}
+          onClick={() => handleStatusChange(0)}
         >
           <AlertCircle size={12} className="mr-1" />
-          Pending
+          待审核
         </Badge>
         <Badge 
-          className={`cursor-pointer bg-red-50 text-red-700 border-red-200 ${status === 'rejected' ? 'ring-1 ring-red-700' : ''}`}
-          onClick={() => handleStatusChange('rejected')}
+          className={`cursor-pointer bg-red-50 text-red-700 border-red-200 ${status === 2 ? 'ring-1 ring-red-700' : ''}`}
+          onClick={() => handleStatusChange(2)}
         >
           <X size={12} className="mr-1" />
-          Rejected
+          已拒绝
         </Badge>
         <Button 
           variant="ghost" 
           size="icon" 
           className="h-6 w-6 ml-1" 
           onClick={() => setEditingStatus(false)}
+          disabled={isUpdating}
         >
           <X size={14} />
         </Button>
@@ -64,28 +98,37 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status: initialStatus 
   }
   
   switch (status) {
-    case 'approved':
+    case 1: // approved
       return (
         <div className="flex items-center gap-1">
-          <Badge className="bg-green-50 text-green-700 border-green-200">Approved</Badge>
+          <Badge className="bg-green-50 text-green-700 border-green-200">
+            <Check size={12} className="mr-1" />
+            已批准
+          </Badge>
           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingStatus(true)}>
             <Edit size={12} />
           </Button>
         </div>
       );
-    case 'rejected':
+    case 2: // rejected
       return (
         <div className="flex items-center gap-1">
-          <Badge className="bg-red-50 text-red-700 border-red-200">Rejected</Badge>
+          <Badge className="bg-red-50 text-red-700 border-red-200">
+            <X size={12} className="mr-1" />
+            已拒绝
+          </Badge>
           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingStatus(true)}>
             <Edit size={12} />
           </Button>
         </div>
       );
-    default:
+    default: // 0 = pending or any other value
       return (
         <div className="flex items-center gap-1">
-          <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200">Pending</Badge>
+          <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200">
+            <AlertCircle size={12} className="mr-1" />
+            待审核
+          </Badge>
           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingStatus(true)}>
             <Edit size={12} />
           </Button>
