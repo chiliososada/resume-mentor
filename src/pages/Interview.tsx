@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { QuestionCard } from '@/components/interview/QuestionCard';
 import { QuestionForm } from '@/components/interview/QuestionForm';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, Check, X, AlertCircle, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, Check, X, AlertCircle, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
@@ -26,7 +26,7 @@ const InterviewPage = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+  const [positionFilter, setPositionFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -34,8 +34,28 @@ const InterviewPage = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
-  // 用于跟踪活跃的分类
-  const [categories, setCategories] = useState<string[]>([]);
+  // 用于跟踪活跃的职位
+  const [positions, setPositions] = useState<string[]>([]);
+  
+  // 从API获取并显示可用的职位名称
+  const fetchPositions = async () => {
+    try {
+      const response = await fetch('/api/Case/positions');
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setPositions(data);
+        }
+      }
+    } catch (error) {
+      console.error('获取职位列表失败:', error);
+    }
+  };
+  
+  // 组件挂载时获取职位列表
+  useEffect(() => {
+    fetchPositions();
+  }, []);
   
   const fetchQuestions = async () => {
     try {
@@ -64,6 +84,11 @@ const InterviewPage = () => {
         }
       }
       
+      // 职位过滤
+      if (positionFilter.length > 0 && positionFilter[0] !== '') {
+        filter.Position = positionFilter.join(',');
+      }
+      
       // 获取问题列表
       const response = await questionService.getQuestions(
         currentPage,
@@ -76,13 +101,15 @@ const InterviewPage = () => {
       setTotalPages(response.pageCount);
       setTotalCount(response.totalCount);
       
-      // 提取并记录所有分类（使用关键词作为分类）
-      const extractedCategories = Array.from(
-        new Set(response.items.map(q => q.caseName || '未分类'))
+      // 提取并记录数据中的所有职位名称
+      const extractedPositions = Array.from(
+        new Set(response.items.map(q => q.position || '').filter(p => p))
       );
-      setCategories(prev => {
-        const uniqueCategories = Array.from(new Set([...prev, ...extractedCategories]));
-        return uniqueCategories.filter(c => c);
+      
+      // 更新职位列表，合并已知的和新提取的
+      setPositions(prevPositions => {
+        const combinedPositions = [...prevPositions, ...extractedPositions];
+        return Array.from(new Set(combinedPositions)).filter(Boolean);
       });
       
     } catch (error) {
@@ -106,13 +133,13 @@ const InterviewPage = () => {
   useEffect(() => {
     setCurrentPage(1);
     fetchQuestions();
-  }, [statusFilter, categoryFilter, searchQuery]);
+  }, [statusFilter, positionFilter, searchQuery]);
   
-  const toggleCategoryFilter = (category: string) => {
-    if (categoryFilter.includes(category)) {
-      setCategoryFilter(categoryFilter.filter(c => c !== category));
+  const togglePositionFilter = (position: string) => {
+    if (positionFilter.includes(position)) {
+      setPositionFilter(positionFilter.filter(p => p !== position));
     } else {
-      setCategoryFilter([...categoryFilter, category]);
+      setPositionFilter([...positionFilter, position]);
     }
   };
   
@@ -142,24 +169,18 @@ const InterviewPage = () => {
     setCurrentPage(pageNumber);
   };
   
-  // 获取状态显示文本
-  const getStatusText = (status: number): string => {
-    switch (status) {
-      case 1: return '已批准';
-      case 2: return '已拒绝';
-      case 0:
-      default: return '待审核';
-    }
-  };
-  
   // 根据问题对象构建卡片所需的数据
   const mapQuestionToCardProps = (question: Question) => {
+    // 确保职位名称不为空
+    const position = question.position || '';
+    
     return {
       id: question.questionID.toString(),
       question: question.questionText,
       answer: question.answer || "",
       category: question.caseName || "未分类",
       company: question.companyName,
+      position: position,
       isInternal: question.source === 1, // 1 = Company, 0 = Personal
       status: typeof question.status === 'number' ? question.status : statusToNumber(question.status),
       createdBy: question.username || "匿名用户",
@@ -167,6 +188,22 @@ const InterviewPage = () => {
       comments: [], // 评论通常需要额外请求
     };
   };
+
+  // 过滤问题列表
+  const filteredQuestions = questions.filter(question => {
+    // 职位过滤
+    if (positionFilter.length > 0) {
+      // 如果问题没有职位信息或者职位不在过滤列表中，则不显示
+      if (!question.position || !positionFilter.includes(question.position)) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+
+  // 确保我们至少有一些职位数据用于显示
+  const displayPositions = positions.length > 0 ? positions : ['开发', '测试', '设计', '产品经理'];
 
   return (
     <div className="page-transition">
@@ -202,17 +239,19 @@ const InterviewPage = () => {
             </Button>
           </form>
           
+          {/* 职位名称过滤器 */}
           <div className="flex flex-wrap gap-2 items-center">
             <Filter size={16} className="text-muted-foreground" />
+            <span className="text-sm text-muted-foreground mr-2">职位:</span>
             <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
+              {displayPositions.map((position) => (
                 <Badge
-                  key={category}
-                  variant={categoryFilter.includes(category) ? 'default' : 'outline'}
+                  key={position}
+                  variant={positionFilter.includes(position) ? 'default' : 'outline'}
                   className="cursor-pointer"
-                  onClick={() => toggleCategoryFilter(category)}
+                  onClick={() => togglePositionFilter(position)}
                 >
-                  {category}
+                  {position || '未分类'}
                 </Badge>
               ))}
             </div>

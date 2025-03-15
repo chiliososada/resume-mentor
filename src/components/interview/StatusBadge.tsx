@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Check, X, AlertCircle, Edit } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { questionService } from '@/services/questionService';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StatusBadgeProps {
   status: number; // 修改为数字类型
@@ -19,6 +20,11 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   const [status, setStatus] = React.useState<number>(initialStatus);
   const [editingStatus, setEditingStatus] = React.useState(false);
   const [isUpdating, setIsUpdating] = React.useState(false);
+
+  // 获取用户类型
+  const { user } = useAuth();
+  const userType = user?.userType || 0; // 默认为 student(0)
+  const isStudent = userType === 0;
 
   const handleStatusChange = async (newStatus: number) => {
     if (isUpdating) return;
@@ -105,9 +111,11 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
             <Check size={12} className="mr-1" />
             已批准
           </Badge>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingStatus(true)}>
-            <Edit size={12} />
-          </Button>
+          {!isStudent && ( // 非学生用户才显示编辑按钮
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingStatus(true)}>
+              <Edit size={12} />
+            </Button>
+          )}
         </div>
       );
     case 2: // rejected
@@ -117,9 +125,11 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
             <X size={12} className="mr-1" />
             已拒绝
           </Badge>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingStatus(true)}>
-            <Edit size={12} />
-          </Button>
+          {!isStudent && ( // 非学生用户才显示编辑按钮
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingStatus(true)}>
+              <Edit size={12} />
+            </Button>
+          )}
         </div>
       );
     default: // 0 = pending or any other value
@@ -129,9 +139,11 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
             <AlertCircle size={12} className="mr-1" />
             待审核
           </Badge>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingStatus(true)}>
-            <Edit size={12} />
-          </Button>
+          {!isStudent && ( // 非学生用户才显示编辑按钮
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingStatus(true)}>
+              <Edit size={12} />
+            </Button>
+          )}
         </div>
       );
   }

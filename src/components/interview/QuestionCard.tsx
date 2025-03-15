@@ -14,6 +14,7 @@ export interface InterviewQuestion {
   answer: string;
   category: string;
   company?: string;
+  position?: string;
   isInternal: boolean;
   status: number; // 修改为数字类型，对应后端枚举
   createdBy: string;
@@ -39,6 +40,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
   const [comments, setComments] = useState<Comment[]>(question.comments || []);
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoadedRevisions, setHasLoadedRevisions] = useState(false);
+  const [firstComment, setFirstComment] = useState<Comment | null>(null);
 
   const toggleExpanded = () => {
     setExpanded(!expanded);
@@ -69,6 +71,11 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
         createdAt: new Date(revision.createdAt)
       }));
       
+      // 如果有评论，则设置第一条评论
+      if (newComments.length > 0) {
+        setFirstComment(newComments[0]);
+      }
+      
       setComments(newComments);
       setHasLoadedRevisions(true);
     } catch (error) {
@@ -77,6 +84,11 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
       setIsLoading(false);
     }
   };
+
+  // 在组件挂载时加载修订/评论
+  useEffect(() => {
+    loadRevisions();
+  }, []);
 
   const handleAddComment = async (commentText: string) => {
     if (!commentText.trim()) return;
@@ -137,21 +149,28 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
                 status={question.status} 
                 questionId={parseInt(question.id)}
                 onStatusChange={onStatusChange}
+                position={question.position}
               />
               <h3 className="font-medium text-lg leading-tight text-balance">{question.question}</h3>
             </div>
           </div>
           
-          <div className="mb-3">
-            {expanded ? (
-              <div className="text-sm text-foreground animate-fade-in">
-                {question.answer}
-              </div>
-            ) : (
-              <div className="text-sm text-foreground line-clamp-2">
-                {question.answer}
-              </div>
-            )}
+          {/* 显示答案部分 - 优先显示第一条评论内容，如果没有则显示原答案 */}
+          <div className="mb-3 mt-4 bg-muted/30 p-3 rounded-md">
+          { /*  <h4 className="text-sm font-medium mb-1 text-muted-foreground">答案:</h4>*/}
+            <div className="text-sm text-foreground">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-2">
+                  <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full mr-2"></div>
+                  加载中...
+                </div>
+              ) : firstComment ? (
+                firstComment.content
+              ) : (
+                question.answer || "暂无答案"
+              )}
+            </div>
+          
           </div>
           
           <div className="flex justify-between items-center text-sm text-muted-foreground">

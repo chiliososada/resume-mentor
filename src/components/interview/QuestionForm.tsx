@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,30 +9,45 @@ import { CheckIcon, Plus, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { caseService } from '@/services/caseService';
 import { questionService } from '@/services/questionService';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const QuestionForm: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }) => {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
-  const [keyword, setKeyword] = useState('');
   const [caseContent, setCaseContent] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [source, setSource] = useState<number>(0); // 0 = Personal, 1 = Company
-  
-  // 简化的案例表单状态
+
+  // 案例相关字段
   const [caseName, setCaseName] = useState('');
-  const [companyName, setCompanyName] = useState('');
   const [position, setPosition] = useState('');
+
+  // 获取用户类型
+  const { user } = useAuth();
+  const userType = user?.userType || 0; // 默认为 student(0)
+  const isTeacherOrAdmin = userType === 1 || userType === 2; // 教师或管理员
+
+  // 当组件挂载或用户类型变化时，设置默认值
+  useEffect(() => {
+    if (isTeacherOrAdmin) {
+      setCaseName('toyousoft');
+    }
+  }, [isTeacherOrAdmin]);
 
   const resetForm = () => {
     setQuestion('');
     setAnswer('');
-    setKeyword('');
     setCaseContent('');
-    setCaseName('');
-    setCompanyName('');
     setPosition('');
     setSource(0);
+    
+    // 只有在学生模式下才重置案例名称
+    if (!isTeacherOrAdmin) {
+      setCaseName('');
+    } else {
+      setCaseName('toyousoft');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,23 +61,38 @@ export const QuestionForm: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
       });
       return;
     }
+
+    if (!position.trim()) {
+      toast({
+        title: "职位名称不能为空",
+        description: "职位名称是必填项。",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isTeacherOrAdmin && !caseName.trim()) {
+      toast({
+        title: "案例名称不能为空",
+        description: "请输入案例名称。",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       setIsSubmitting(true);
       
-      // 首先创建或获取案例
-      let caseId: number;
-      
-      // 创建一个新的案例
+      // 创建案例
       const caseRequest = {
-        caseName: caseName || `关于${keyword}的面试问题`,
-        //companyName: companyName || 'ToYouSoft',
-        //position: position || '开发职位',
-        description: caseContent || undefined
+        caseName: caseName || `面试问题集`,
+        companyName: isTeacherOrAdmin ? 'toyousoft' : undefined,
+        position: position,
+        description: caseContent || `${position}相关面试问题`
       };
       
       const caseResponse = await caseService.createCase(caseRequest);
-      caseId = caseResponse.caseId;
+      const caseId = caseResponse.caseId;
       
       // 创建问题
       const questionRequest = {
@@ -72,7 +102,7 @@ export const QuestionForm: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
         source: source 
       };
       
-      const response = await questionService.createQuestion(questionRequest);
+      await questionService.createQuestion(questionRequest);
       
       toast({
         title: "问题已提交",
@@ -128,34 +158,27 @@ export const QuestionForm: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
         </div>
         
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="caseName">案例名称</Label>
+              <Label htmlFor="caseName">案例名称 {!isTeacherOrAdmin && "*"}</Label>
               <Input
                 id="caseName"
                 value={caseName}
                 onChange={(e) => setCaseName(e.target.value)}
                 placeholder="输入案例名称"
+                disabled={isTeacherOrAdmin} // 教师或管理员不可编辑
+                required={!isTeacherOrAdmin} // 学生必填
               />
             </div>
             
             <div className="space-y-1.5">
-              <Label htmlFor="companyName">公司名称</Label>
-              <Input
-                id="companyName"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="输入公司名称"
-              />
-            </div>
-            
-            <div className="space-y-1.5">
-              <Label htmlFor="position">职位名称</Label>
+              <Label htmlFor="position">职位名称 *</Label>
               <Input
                 id="position"
                 value={position}
                 onChange={(e) => setPosition(e.target.value)}
                 placeholder="输入职位名称"
+                required
               />
             </div>
           </div>
@@ -188,17 +211,6 @@ export const QuestionForm: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               placeholder="输入问题答案"
-              required
-            />
-          </div>
-          
-          <div className="space-y-1.5">
-            <Label htmlFor="keyword">关键词 *</Label>
-            <Input
-              id="keyword"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="例如: JavaScript, React, 领导力"
               required
             />
           </div>

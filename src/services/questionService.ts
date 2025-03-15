@@ -1,18 +1,18 @@
 import { apiRequest } from "./api";
 
 export interface Question {
-  id: number;
   questionID: number;
   caseID: number;
   questionText: string;
   answer: string;
   source: number;
-  status: string;
+  status: number | string;
   createdAt: string;
   username: string;
   userID: number;
-  caseName: string;
-  companyName: string;
+  caseName: string;    // 从Case对象获取的字段
+  companyName: string; // 从Case对象获取的字段
+  position: string;    // 从Case对象获取的字段
   revisionCount: number;
 }
 
