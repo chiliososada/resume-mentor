@@ -7,11 +7,12 @@ import { questionService } from '@/services/questionService';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface StatusBadgeProps {
-  status: number; // 修改为数字类型
+  status: number; // 使用数字类型表示状态
   questionId: number;
   onStatusChange?: () => void;
 }
 
+// 状态枚举: 0 = 待审核, 1 = 已批准, 2 = 已拒绝
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ 
   status: initialStatus, 
   questionId,
@@ -24,7 +25,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   // 获取用户类型
   const { user } = useAuth();
   const userType = user?.userType || 0; // 默认为 student(0)
-  const isStudent = userType === 0;
+  const isTeacherOrAdmin = userType === 1 || userType === 2; // 教师(1)或管理员(2)
 
   const handleStatusChange = async (newStatus: number) => {
     if (isUpdating) return;
@@ -36,7 +37,11 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       await questionService.approveQuestion(
         questionId,
         newStatus,
-        `状态已被用户更改为 ${newStatus}`
+        `状态已更新为 ${
+          newStatus === 0 ? '待审核' : 
+          newStatus === 1 ? '已批准' : 
+          '已拒绝'
+        }`
       );
       
       setStatus(newStatus);
@@ -104,42 +109,42 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   }
   
   switch (status) {
-    case 1: // approved
+    case 1: // 已批准
       return (
         <div className="flex items-center gap-1">
           <Badge className="bg-green-50 text-green-700 border-green-200">
             <Check size={12} className="mr-1" />
             已批准
           </Badge>
-          {!isStudent && ( // 非学生用户才显示编辑按钮
+          {isTeacherOrAdmin && ( // 只有老师和管理员可以编辑状态
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingStatus(true)}>
               <Edit size={12} />
             </Button>
           )}
         </div>
       );
-    case 2: // rejected
+    case 2: // 已拒绝
       return (
         <div className="flex items-center gap-1">
           <Badge className="bg-red-50 text-red-700 border-red-200">
             <X size={12} className="mr-1" />
             已拒绝
           </Badge>
-          {!isStudent && ( // 非学生用户才显示编辑按钮
+          {isTeacherOrAdmin && (
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingStatus(true)}>
               <Edit size={12} />
             </Button>
           )}
         </div>
       );
-    default: // 0 = pending or any other value
+    default: // 0 = 待审核
       return (
         <div className="flex items-center gap-1">
           <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200">
             <AlertCircle size={12} className="mr-1" />
             待审核
           </Badge>
-          {!isStudent && ( // 非学生用户才显示编辑按钮
+          {isTeacherOrAdmin && (
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingStatus(true)}>
               <Edit size={12} />
             </Button>

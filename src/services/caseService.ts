@@ -73,5 +73,17 @@ export const caseService = {
   
   deleteCase: async (id: number): Promise<{ message: string }> => {
     return apiRequest(`/Case/${id}`, "DELETE");
+  },
+  /**
+ * 获取所有可用的职位列表
+ * @returns 职位名称字符串数组
+ */
+getPositions: async (): Promise<string[]> => {
+  try {
+    return await apiRequest("/Case/positions");
+  } catch (error) {
+    console.error('获取职位列表失败:', error);
+    return []; // 出错时返回空数组，避免UI崩溃
   }
+}
 };

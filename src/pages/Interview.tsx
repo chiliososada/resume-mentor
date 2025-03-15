@@ -7,8 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { questionService, Question } from '@/services/questionService';
+import { caseService } from '@/services/caseService';
 import { toast } from '@/components/ui/use-toast';
 
+// 确保状态映射正确: 0 = 待审核, 1 = 已批准, 2 = 已拒绝
 const statusToNumber = (status: string | number): number => {
   if (typeof status === 'number') {
     return status;
@@ -19,6 +21,15 @@ const statusToNumber = (status: string | number): number => {
     case 'rejected': return 2;
     case 'pending':
     default: return 0;
+  }
+};
+
+const statusToText = (status: number): string => {
+  switch (status) {
+    case 1: return '已批准';
+    case 2: return '已拒绝';
+    case 0:
+    default: return '待审核';
   }
 };
 
@@ -37,18 +48,30 @@ const InterviewPage = () => {
   // 用于跟踪活跃的职位
   const [positions, setPositions] = useState<string[]>([]);
   
-  // 从API获取并显示可用的职位名称
+  // 获取职位列表
   const fetchPositions = async () => {
     try {
-      const response = await fetch('/api/Case/positions');
-      if (response.ok) {
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          setPositions(data);
-        }
+      setLoading(true); // 或者你可能有专门的 setLoadingPositions 状态
+      
+      // 直接调用新添加的API方法
+      const positionList = await caseService.getPositions();
+      
+      if (Array.isArray(positionList) && positionList.length > 0) {
+        setPositions(positionList);
+      } else {
+        // 如果返回空数组，保留可能已有的职位数据
+        console.log('没有返回职位数据或数据为空');
       }
     } catch (error) {
       console.error('获取职位列表失败:', error);
+      // 显示错误通知
+      toast({
+        title: "获取职位列表失败",
+        description: "将使用现有职位数据",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false); // 或者 setLoadingPositions(false)
     }
   };
   
@@ -68,16 +91,9 @@ const InterviewPage = () => {
         filter.Keyword = searchQuery;
       }
       
-      // 状态过滤
+      // 状态过滤 - 确保转换为正确的数字值
       if (statusFilter.length > 0) {
-        // 转换状态名称为数字
-        const statusValues = statusFilter.map(status => {
-          switch (status) {
-            case 'approved': return 1;
-            case 'rejected': return 2;
-            default: return 0; // pending
-          }
-        });
+        const statusValues = statusFilter.map(status => statusToNumber(status));
         
         if (statusValues.length === 1) {
           filter.Status = statusValues[0];
@@ -101,12 +117,16 @@ const InterviewPage = () => {
       setTotalPages(response.pageCount);
       setTotalCount(response.totalCount);
       
-      // 提取并记录数据中的所有职位名称
+      // 提取并更新可能的新职位
       const extractedPositions = Array.from(
-        new Set(response.items.map(q => q.position || '').filter(p => p))
+        new Set(
+          response.items
+            .map(q => q.position)
+            .filter(p => p && p.trim() !== '')
+        )
       );
       
-      // 更新职位列表，合并已知的和新提取的
+      // 合并已有的和新提取的职位，并去重
       setPositions(prevPositions => {
         const combinedPositions = [...prevPositions, ...extractedPositions];
         return Array.from(new Set(combinedPositions)).filter(Boolean);
@@ -171,16 +191,13 @@ const InterviewPage = () => {
   
   // 根据问题对象构建卡片所需的数据
   const mapQuestionToCardProps = (question: Question) => {
-    // 确保职位名称不为空
-    const position = question.position || '';
-    
     return {
       id: question.questionID.toString(),
       question: question.questionText,
       answer: question.answer || "",
       category: question.caseName || "未分类",
       company: question.companyName,
-      position: position,
+      position: question.position || "",
       isInternal: question.source === 1, // 1 = Company, 0 = Personal
       status: typeof question.status === 'number' ? question.status : statusToNumber(question.status),
       createdBy: question.username || "匿名用户",
@@ -188,22 +205,6 @@ const InterviewPage = () => {
       comments: [], // 评论通常需要额外请求
     };
   };
-
-  // 过滤问题列表
-  const filteredQuestions = questions.filter(question => {
-    // 职位过滤
-    if (positionFilter.length > 0) {
-      // 如果问题没有职位信息或者职位不在过滤列表中，则不显示
-      if (!question.position || !positionFilter.includes(question.position)) {
-        return false;
-      }
-    }
-    
-    return true;
-  });
-
-  // 确保我们至少有一些职位数据用于显示
-  const displayPositions = positions.length > 0 ? positions : ['开发', '测试', '设计', '产品经理'];
 
   return (
     <div className="page-transition">
@@ -215,7 +216,10 @@ const InterviewPage = () => {
           </p>
         </div>
         
-        <QuestionForm onSuccess={refreshQuestions} />
+        <QuestionForm onSuccess={() => {
+          refreshQuestions();
+          fetchPositions(); // 添加问题后刷新职位列表
+        }} />
         
         <div className="flex flex-col gap-4">
           <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-4">
@@ -244,16 +248,20 @@ const InterviewPage = () => {
             <Filter size={16} className="text-muted-foreground" />
             <span className="text-sm text-muted-foreground mr-2">职位:</span>
             <div className="flex flex-wrap gap-2">
-              {displayPositions.map((position) => (
-                <Badge
-                  key={position}
-                  variant={positionFilter.includes(position) ? 'default' : 'outline'}
-                  className="cursor-pointer"
-                  onClick={() => togglePositionFilter(position)}
-                >
-                  {position || '未分类'}
-                </Badge>
-              ))}
+              {positions.length > 0 ? (
+                positions.map((position) => (
+                  <Badge
+                    key={position}
+                    variant={positionFilter.includes(position) ? 'default' : 'outline'}
+                    className="cursor-pointer"
+                    onClick={() => togglePositionFilter(position)}
+                  >
+                    {position || '未分类'}
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-sm text-muted-foreground">无职位数据</span>
+              )}
             </div>
           </div>
           
@@ -327,22 +335,16 @@ const InterviewPage = () => {
                     />
                   </PaginationItem>
                   
-                  {/* 生成页码按钮 */}
                   {Array.from({ length: Math.min(5, totalPages) }).map((_, index) => {
-                    // 显示当前页及其周围的页码
                     let pageNumber;
                     
                     if (totalPages <= 5) {
-                      // 如果总页数小于等于5，直接显示所有页码
                       pageNumber = index + 1;
                     } else if (currentPage <= 3) {
-                      // 如果当前页靠近开始，显示前5页
                       pageNumber = index + 1;
                     } else if (currentPage >= totalPages - 2) {
-                      // 如果当前页靠近结束，显示最后5页
                       pageNumber = totalPages - 4 + index;
                     } else {
-                      // 否则显示当前页及其前后各2页
                       pageNumber = currentPage - 2 + index;
                     }
                     

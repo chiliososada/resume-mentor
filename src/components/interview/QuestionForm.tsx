@@ -22,18 +22,51 @@ export const QuestionForm: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
   // 案例相关字段
   const [caseName, setCaseName] = useState('');
   const [position, setPosition] = useState('');
+  
+  // 获取可能的职位列表
+  const [availablePositions, setAvailablePositions] = useState<string[]>([]);
+  const [loadingPositions, setLoadingPositions] = useState(false);
 
   // 获取用户类型
   const { user } = useAuth();
   const userType = user?.userType || 0; // 默认为 student(0)
   const isTeacherOrAdmin = userType === 1 || userType === 2; // 教师或管理员
 
-  // 当组件挂载或用户类型变化时，设置默认值
+  // 获取可用的职位列表
+  const fetchPositions = async () => {
+    try {
+      setLoadingPositions(true);
+      const response = await caseService.getCases(1, 100);
+      
+      if (response && response.items) {
+        // 提取不同的职位并过滤掉null和空值
+        const uniquePositions = Array.from(
+          new Set(
+            response.items
+              .map(item => item.position)
+              .filter(position => position && position.trim() !== '')
+          )
+        );
+        
+        setAvailablePositions(uniquePositions);
+      }
+    } catch (error) {
+      console.error('获取职位列表失败:', error);
+    } finally {
+      setLoadingPositions(false);
+    }
+  };
+
+  // 当组件挂载时，获取职位列表和设置默认值
   useEffect(() => {
+    if (isExpanded) {
+      fetchPositions();
+    }
+    
     if (isTeacherOrAdmin) {
       setCaseName('toyousoft');
     }
-  }, [isTeacherOrAdmin]);
+  }, [isExpanded, isTeacherOrAdmin]);
 
   const resetForm = () => {
     setQuestion('');
@@ -173,13 +206,43 @@ export const QuestionForm: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
             
             <div className="space-y-1.5">
               <Label htmlFor="position">职位名称 *</Label>
-              <Input
-                id="position"
-                value={position}
-                onChange={(e) => setPosition(e.target.value)}
-                placeholder="输入职位名称"
-                required
-              />
+              {availablePositions.length > 0 ? (
+                <Select 
+                  value={position} 
+                  onValueChange={setPosition}
+                >
+                  <SelectTrigger id="position">
+                    <SelectValue placeholder="选择职位名称" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availablePositions.map((pos) => (
+                      <SelectItem key={pos} value={pos}>
+                        {pos}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="other">+ 添加新职位</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="position"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  placeholder="输入职位名称"
+                  required
+                />
+              )}
+              
+              {/* 如果选择"添加新职位"，则显示输入框 */}
+              {position === 'other' && (
+                <Input
+                  className="mt-2"
+                  value=""
+                  onChange={(e) => setPosition(e.target.value)}
+                  placeholder="输入新职位名称"
+                  required
+                />
+              )}
             </div>
           </div>
           
@@ -221,7 +284,7 @@ export const QuestionForm: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
               value={source.toString()} 
               onValueChange={(value) => setSource(parseInt(value))}
             >
-              <SelectTrigger>
+              <SelectTrigger id="source">
                 <SelectValue placeholder="选择问题来源" />
               </SelectTrigger>
               <SelectContent>
