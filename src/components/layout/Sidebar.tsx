@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FileText, Users, Settings, Home, LogOut } from 'lucide-react';
@@ -17,15 +16,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
   const isActive = (path: string) => location.pathname === path;
 
   const navigation = [
-    { name: 'Dashboard', path: '/', icon: Home },
-    { name: 'Resume', path: '/resume', icon: FileText },
-    { name: 'Interview', path: '/interview', icon: Users },
-    { name: 'Settings', path: '/settings', icon: Settings },
+    { name: '仪表板', path: '/', icon: Home },
+    { name: '简历', path: '/resume', icon: FileText },
+    { name: '面试问题', path: '/interview', icon: Users },
+    { name: '设置', path: '/settings', icon: Settings },
   ];
   
   const handleLogout = () => {
     logout();
-    toast.success('Logged out successfully');
+    toast.success('已成功退出登录');
     navigate('/login');
   };
 
@@ -67,7 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
           onClick={handleLogout}
         >
           <LogOut size={collapsed ? 20 : 18} />
-          {!collapsed && <span>Sign Out</span>}
+          {!collapsed && <span>退出登录</span>}
         </div>
       </div>
     </div>

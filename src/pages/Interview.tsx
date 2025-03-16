@@ -60,14 +60,14 @@ const InterviewPage = () => {
         setPositions(positionList);
       } else {
         // 如果返回空数组，保留可能已有的职位数据
-        console.log('没有返回职位数据或数据为空');
+        console.log('没有返回关键字数据或数据为空');
       }
     } catch (error) {
-      console.error('获取职位列表失败:', error);
+      console.error('获取关键字列表失败:', error);
       // 显示错误通知
       toast({
-        title: "获取职位列表失败",
-        description: "将使用现有职位数据",
+        title: "获取关键字列表失败",
+        description: "将使用关键字数据",
         variant: "destructive",
       });
     } finally {
@@ -243,10 +243,10 @@ const InterviewPage = () => {
             </Button>
           </form>
           
-          {/* 职位名称过滤器 */}
+          {/* 关键字过滤器 */}
           <div className="flex flex-wrap gap-2 items-center">
             <Filter size={16} className="text-muted-foreground" />
-            <span className="text-sm text-muted-foreground mr-2">职位:</span>
+            <span className="text-sm text-muted-foreground mr-2">关键字:</span>
             <div className="flex flex-wrap gap-2">
               {positions.length > 0 ? (
                 positions.map((position) => (
@@ -260,7 +260,7 @@ const InterviewPage = () => {
                   </Badge>
                 ))
               ) : (
-                <span className="text-sm text-muted-foreground">无职位数据</span>
+                <span className="text-sm text-muted-foreground">无关键字数据</span>
               )}
             </div>
           </div>

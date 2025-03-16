@@ -205,7 +205,7 @@ export const QuestionForm: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
             </div>
             
             <div className="space-y-1.5">
-              <Label htmlFor="position">职位名称 *</Label>
+              <Label htmlFor="position">关键字（Java,JavaScript） *</Label>
               {availablePositions.length > 0 ? (
                 <Select 
                   value={position} 

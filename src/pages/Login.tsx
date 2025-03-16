@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,57 +25,63 @@ const Login = () => {
         navigate('/');
       }
     } catch (error) {
-      console.error('Login error:', error);
-      toast.error('An unexpected error occurred. Please try again.');
+      console.error('登录错误:', error);
+      toast.error('发生意外错误，请重试。');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
       <div className="w-full max-w-md p-4">
         <Card className="glass-card shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">ToYouSoftEms</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">员工管理系统</CardTitle>
             <CardDescription className="text-center">
-              Enter your credentials to sign in
+              请输入您的账号密码登录
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username">用户名</Label>
                 <Input
                   id="username"
-                  placeholder="Enter your username"
+                  placeholder="请输入用户名"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">密码</Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Enter your password"
+                  placeholder="请输入密码"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Signing in...' : 'Sign In'}
+                {isLoading ? '登录中...' : '登录'}
               </Button>
             </form>
           </CardContent>
-          <CardFooter className="flex justify-center">
-            <p className="text-sm text-muted-foreground">
-              Default credentials: admin / admin
+          <CardFooter className="flex justify-center flex-col items-center">
+            <p className="text-sm text-muted-foreground mb-2">
+              
             </p>
           </CardFooter>
         </Card>
+      </div>
+      
+      {/* 固定显示的公司名称 */}
+      <div className="mt-8 text-center">
+        <p className="text-lg font-semibold text-gray-600">東陽ソフト株式会社</p>
+        <p className="text-sm text-gray-500 mt-1">&copy; {new Date().getFullYear()} </p>
       </div>
     </div>
   );
