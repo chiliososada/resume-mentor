@@ -17,10 +17,10 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
       const success = await login(username, password);
-      
+
       if (success) {
         navigate('/');
       }
@@ -37,7 +37,7 @@ const Login = () => {
       <div className="w-full max-w-md p-4">
         <Card className="glass-card shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">员工管理系统</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">ToYouSoftEMS</CardTitle>
             <CardDescription className="text-center">
               请输入您的账号密码登录
             </CardDescription>
@@ -72,12 +72,12 @@ const Login = () => {
           </CardContent>
           <CardFooter className="flex justify-center flex-col items-center">
             <p className="text-sm text-muted-foreground mb-2">
-              
+
             </p>
           </CardFooter>
         </Card>
       </div>
-      
+
       {/* 固定显示的公司名称 */}
       <div className="mt-8 text-center">
         <p className="text-lg font-semibold text-gray-600">東陽ソフト株式会社</p>
