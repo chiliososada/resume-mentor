@@ -82,11 +82,6 @@ const Login = () => {
       <div className="mt-8 text-center">
         <p className="text-lg font-semibold text-gray-600">東陽ソフト株式会社</p>
         <p className="text-sm text-gray-500 mt-1">&copy; {new Date().getFullYear()} </p>
-     <button
-     onClick={()=>{
-      fetch("/api/Case/1", {method:"GET"})
-     }}
-      >test</button> 
       </div>
     </div>
   );
