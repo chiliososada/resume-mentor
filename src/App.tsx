@@ -12,6 +12,7 @@ import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { useEffect } from "react";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 // Main app with routes
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
+
+
   
   return (
     <Routes>

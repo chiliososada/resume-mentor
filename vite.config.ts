@@ -32,8 +32,9 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     proxy: {
       '/api': {
-        target: 'http://dotnet-app:8080',
+        target: 'http://localhost:5002',
         changeOrigin: true,
+        secure:false,
         // rewrite: (path) => path.replace(/^\/api/, '')  // 如果后端API路径不包含'/api'前缀则需要此行
       }
     }
