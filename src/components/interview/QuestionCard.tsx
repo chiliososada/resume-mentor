@@ -64,12 +64,14 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
       const revisions = await questionService.getRevisions(questionId);
       
       // 将修订转换为评论格式
-      const newComments: Comment[] = revisions.map(revision => ({
+      const newComments: Comment[] = revisions.map(revision => {
+        
+        return {
         id: revision.revisionID.toString(),
         content: revision.revisionText,
         createdBy: revision.username || "用户",
-        createdAt: new Date(revision.createdAt)
-      }));
+        createdAt: new Date(revision.createdAt+"Z")
+      }});
       
       // 如果有评论，则设置第一条评论
       if (newComments.length > 0) {
