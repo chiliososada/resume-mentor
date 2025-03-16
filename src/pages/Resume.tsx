@@ -18,7 +18,7 @@ const ResumePage = () => {
   const [selectedResume, setSelectedResume] = useState<Resume | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const { toast } = useToast();
-  
+
   // 获取简历列表
   const fetchResumes = async () => {
     try {
@@ -36,12 +36,12 @@ const ResumePage = () => {
       setLoading(false);
     }
   };
-  
+
   // 组件挂载时获取数据
   useEffect(() => {
     fetchResumes();
   }, []);
-  
+
   const toggleFilter = (filter: string) => {
     if (activeFilters.includes(filter)) {
       setActiveFilters(activeFilters.filter(f => f !== filter));
@@ -49,14 +49,14 @@ const ResumePage = () => {
       setActiveFilters([...activeFilters, filter]);
     }
   };
-  
+
   const filteredResumes = resumes.filter(resume => {
-    const matchesSearch = resume.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         resume.fileName.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesFilters = activeFilters.length === 0 || 
-                          activeFilters.includes(resume.status);
-    
+    const matchesSearch = resume.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      resume.fileName.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesFilters = activeFilters.length === 0 ||
+      activeFilters.includes(resume.status);
+
     return matchesSearch && matchesFilters;
   });
 
@@ -74,18 +74,18 @@ const ResumePage = () => {
       }
       return resume;
     });
-    
+
     setResumes(updatedResumes);
-    
+
     if (selectedResume && selectedResume.id === resumeId) {
       setSelectedResume({ ...selectedResume, status: newStatus });
     }
-    
+
     toast({
       title: "状态已更新",
       description: `简历状态已更新为${newStatus}。`,
     });
-    
+
     setShowViewModal(false);
   };
 
@@ -96,7 +96,7 @@ const ResumePage = () => {
       createdBy: 'Current User',
       createdAt: new Date(),
     };
-    
+
     const updatedResumes = resumes.map(resume => {
       if (resume.id === resumeId) {
         const updatedComments = resume.comments ? [...resume.comments, newComment] : [newComment];
@@ -104,16 +104,16 @@ const ResumePage = () => {
       }
       return resume;
     });
-    
+
     setResumes(updatedResumes);
-    
+
     if (selectedResume && selectedResume.id === resumeId) {
-      const updatedComments = selectedResume.comments 
-        ? [...selectedResume.comments, newComment] 
+      const updatedComments = selectedResume.comments
+        ? [...selectedResume.comments, newComment]
         : [newComment];
       setSelectedResume({ ...selectedResume, comments: updatedComments });
     }
-    
+
     toast({
       title: "评论已添加",
       description: "您的评论已添加到简历。",
@@ -124,30 +124,30 @@ const ResumePage = () => {
     try {
       // 从fileUrl中提取GUID文件名
       const fileName = "resume_template.xlsx";
-      
+
       // 使用FileController的下载端点
       const response = await fetch(`/api/File/templates/${fileName}`);
-      
+
       if (!response.ok) {
         throw new Error('下载失败');
       }
-      
+
       // 获取文件数据并创建Blob
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      
+
       // 创建下载链接并触发下载
       const a = document.createElement('a');
       a.href = url;
       a.download = "resume_template.xlsx"; // 使用原始文件名
       document.body.appendChild(a);
       a.click();
-      
+
       // 清理
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     }
-    
+
     catch (error) {
       console.error('获取模板失败:', error);
       toast({
@@ -171,15 +171,15 @@ const ResumePage = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="flex items-center gap-2"
               onClick={handleDownloadTemplate}
             >
               <DownloadCloud size={16} />
               模板
             </Button>
-            <Button 
+            <Button
               className="flex items-center gap-2"
               onClick={() => setShowUpload(!showUpload)}
             >
@@ -188,13 +188,13 @@ const ResumePage = () => {
             </Button>
           </div>
         </div>
-        
+
         {showUpload && (
           <div className="animate-fade-in">
             <ResumeUpload onUploadSuccess={fetchResumes} />
           </div>
         )}
-        
+
         <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
@@ -226,7 +226,7 @@ const ResumePage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 border border-border rounded-lg p-4">
             {loading ? (
               <div className="col-span-full flex justify-center p-8">
@@ -235,13 +235,13 @@ const ResumePage = () => {
             ) : (
               <>
                 {filteredResumes.map((resume) => (
-                  <ResumeCard 
-                    key={resume.id} 
-                    resume={resume} 
+                  <ResumeCard
+                    key={resume.id}
+                    resume={resume}
                     onView={() => handleViewResume(resume)}
                   />
                 ))}
-                
+
                 {filteredResumes.length === 0 && (
                   <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
                     <div className="rounded-full bg-muted p-3 mb-3">

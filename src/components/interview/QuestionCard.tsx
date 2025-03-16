@@ -79,7 +79,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
       setComments(newComments);
       setHasLoadedRevisions(true);
     } catch (error) {
-      console.error('加载评论失败:', error);
+      console.error('加载答案失败:', error);
     } finally {
       setIsLoading(false);
     }

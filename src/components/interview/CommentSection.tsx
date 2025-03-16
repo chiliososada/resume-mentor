@@ -27,8 +27,8 @@ const formatDate = (date: Date) => {
   }).format(date);
 };
 
-export const CommentSection: React.FC<CommentSectionProps> = ({ 
-  comments, 
+export const CommentSection: React.FC<CommentSectionProps> = ({
+  comments,
   onAddComment,
   isLoading = false
 }) => {
@@ -57,7 +57,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         </div>
       ) : comments.length > 0 ? (
         <div className="mt-4 pt-4 border-t space-y-3 animate-fade-in">
-          <h4 className="text-sm font-medium">评论</h4>
+          <h4 className="text-sm font-medium">答案履历</h4>
           {comments.map((comment) => (
             <div key={comment.id} className="flex gap-3">
               <Avatar className="h-8 w-8">
@@ -80,25 +80,25 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
           ))}
         </div>
       ) : null}
-      
+
       {showCommentForm ? (
         <div className="mt-4 pt-4 border-t animate-fade-in">
           <Textarea
-            placeholder="添加您的评论..."
+            placeholder="更新您的答案..."
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             className="mb-3 min-h-[80px] w-full"
           />
           <div className="flex justify-end gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => setShowCommentForm(false)}
               disabled={isSubmitting}
             >
               取消
             </Button>
-            <Button 
+            <Button
               size="sm"
               onClick={handleAddComment}
               disabled={!commentText.trim() || isSubmitting}
@@ -112,7 +112,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
               ) : (
                 <>
                   <Send size={14} />
-                  添加评论
+                  添加答案
                 </>
               )}
             </Button>
@@ -126,7 +126,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
           onClick={() => setShowCommentForm(true)}
         >
           <Send size={14} className="mr-1" />
-          添加评论
+          添加答案
         </Button>
       )}
     </>
