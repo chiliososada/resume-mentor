@@ -44,7 +44,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
 
   const toggleExpanded = () => {
     setExpanded(!expanded);
-    
+
     // 当首次展开时，加载评论/修订数据
     if (!expanded && !hasLoadedRevisions) {
       loadRevisions();
@@ -56,13 +56,13 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
     try {
       setIsLoading(true);
       const questionId = parseInt(question.id);
-      
+
       if (isNaN(questionId)) {
         return;
       }
-      
+
       const revisions = await questionService.getRevisions(questionId);
-      
+
       // 将修订转换为评论格式
       const newComments: Comment[] = revisions.map(revision => {
         
@@ -77,11 +77,11 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
       if (newComments.length > 0) {
         setFirstComment(newComments[0]);
       }
-      
+
       setComments(newComments);
       setHasLoadedRevisions(true);
     } catch (error) {
-      console.error('加载评论失败:', error);
+      console.error('加载答案失败:', error);
     } finally {
       setIsLoading(false);
     }
@@ -94,21 +94,21 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
 
   const handleAddComment = async (commentText: string) => {
     if (!commentText.trim()) return;
-    
+
     try {
       const questionId = parseInt(question.id);
-      
+
       if (isNaN(questionId)) {
         throw new Error("问题ID无效");
       }
-      
+
       // 添加评论到后端
       const response = await questionService.addRevision(questionId, {
         revisionText: commentText,
         type: 2, // 2 = TeacherComment
-        comments: "用户评论"
+        comments: "答案"
       });
-      
+
       // 创建新评论并更新状态
       const newComment: Comment = {
         id: response.revisionId.toString(),
@@ -116,23 +116,23 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
         createdBy: "当前用户", // 实际中应该从用户会话获取
         createdAt: new Date()
       };
-      
+
       setComments(prevComments => [...prevComments, newComment]);
-      
+
       toast({
-        title: "评论已添加",
-        description: "您的评论已成功添加。"
+        title: "回答已添加",
+        description: "您的回答已成功添加。"
       });
-      
+
       // 如果有状态变更回调则调用
       if (onStatusChange) {
         onStatusChange();
       }
     } catch (error) {
-      console.error('添加评论失败:', error);
+      console.error('添加答案失败:', error);
       toast({
-        title: "评论失败",
-        description: "添加评论时发生错误，请重试。",
+        title: "添加答案失败",
+        description: "添加答案时发生错误，请重试。",
         variant: "destructive"
       });
     }
@@ -144,11 +144,11 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
         <div className="p-5">
           <div className="flex justify-between items-start mb-3">
             <div className="flex-1">
-              <QuestionMetadata 
-                category={question.category} 
-                company={question.company} 
-                isInternal={question.isInternal} 
-                status={question.status} 
+              <QuestionMetadata
+                category={question.category}
+                company={question.company}
+                isInternal={question.isInternal}
+                status={question.status}
                 questionId={parseInt(question.id)}
                 onStatusChange={onStatusChange}
                 position={question.position}
@@ -156,10 +156,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
               <h3 className="font-medium text-lg leading-tight text-balance">{question.question}</h3>
             </div>
           </div>
-          
+
           {/* 显示答案部分 - 优先显示第一条评论内容，如果没有则显示原答案 */}
           <div className="mb-3 mt-4 bg-muted/30 p-3 rounded-md">
-          { /*  <h4 className="text-sm font-medium mb-1 text-muted-foreground">答案:</h4>*/}
+            { /*  <h4 className="text-sm font-medium mb-1 text-muted-foreground">答案:</h4>*/}
             <div className="text-sm text-foreground">
               {isLoading ? (
                 <div className="flex items-center justify-center py-2">
@@ -172,9 +172,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
                 question.answer || "暂无答案"
               )}
             </div>
-          
+
           </div>
-          
+
           <div className="flex justify-between items-center text-sm text-muted-foreground">
             <span>由 {question.createdBy} 添加于 {formatDate(question.createdAt)}</span>
             <div className="flex gap-4">
@@ -194,19 +194,19 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
               </button>
             </div>
           </div>
-          
+
           {expanded && (
-            <CommentSection 
-              comments={comments} 
+            <CommentSection
+              comments={comments}
               onAddComment={handleAddComment}
-              isLoading={isLoading} 
+              isLoading={isLoading}
             />
           )}
-          
+
           {showCommentForm && !expanded && (
-            <CommentSection 
-              comments={[]} 
-              onAddComment={handleAddComment} 
+            <CommentSection
+              comments={[]}
+              onAddComment={handleAddComment}
             />
           )}
         </div>
