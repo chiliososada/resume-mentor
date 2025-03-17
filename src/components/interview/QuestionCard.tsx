@@ -6,6 +6,7 @@ import { CommentSection } from './CommentSection';
 import { formatDate } from './utils';
 import { questionService } from '@/services/questionService';
 import { toast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 // 定义问题对象的接口
 export interface InterviewQuestion {
@@ -16,7 +17,7 @@ export interface InterviewQuestion {
   company?: string;
   position?: string;
   isInternal: boolean;
-  status: number; // 修改为数字类型，对应后端枚举
+  status: number;
   createdBy: string;
   createdAt: Date;
   comments: Comment[];
@@ -27,6 +28,7 @@ interface Comment {
   content: string;
   createdBy: string;
   createdAt: Date;
+  userType?: number; // 添加用户类型以区分评论者身份
 }
 
 interface QuestionCardProps {
@@ -41,6 +43,11 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoadedRevisions, setHasLoadedRevisions] = useState(false);
   const [firstComment, setFirstComment] = useState<Comment | null>(null);
+
+  // 获取当前用户信息
+  const { user } = useAuth();
+  const currentUserType = user?.userType || 0;
+  const currentUsername = user?.username || '';
 
   const toggleExpanded = () => {
     setExpanded(!expanded);
@@ -63,16 +70,17 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
 
       const revisions = await questionService.getRevisions(questionId);
 
-      // 将修订转换为评论格式
+      // 将修订转换为评论格式，添加用户类型信息
       const newComments: Comment[] = revisions.map(revision => {
-        
         return {
-        id: revision.revisionID.toString(),
-        content: revision.revisionText,
-        createdBy: revision.username || "用户",
-        createdAt: new Date(revision.createdAt+"Z")
-      }});
-      
+          id: revision.revisionID.toString(),
+          content: revision.revisionText,
+          createdBy: revision.username || "用户",
+          createdAt: new Date(revision.createdAt + "Z"),
+          userType: revision.userType // 假设后端返回了用户类型
+        };
+      });
+
       // 如果有评论，则设置第一条评论
       if (newComments.length > 0) {
         setFirstComment(newComments[0]);
@@ -92,6 +100,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
     loadRevisions();
   }, []);
 
+  // 修改QuestionCard.tsx中的handleAddComment方法
   const handleAddComment = async (commentText: string) => {
     if (!commentText.trim()) return;
 
@@ -102,22 +111,29 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
         throw new Error("问题ID无效");
       }
 
-      // 添加评论到后端
+      // 添加评论到后端 - 使用TeacherEdit类型而不是TeacherComment类型
+      // type: 1 = TeacherEdit，2 = TeacherComment
       const response = await questionService.addRevision(questionId, {
         revisionText: commentText,
-        type: 2, // 2 = TeacherComment
+        type: 1, // 改为TeacherEdit类型，这样会更新原始问题的答案
         comments: "答案"
       });
+
+      // 不再需要调用updateQuestion方法，避免重复创建修订
 
       // 创建新评论并更新状态
       const newComment: Comment = {
         id: response.revisionId.toString(),
         content: commentText,
-        createdBy: "当前用户", // 实际中应该从用户会话获取
-        createdAt: new Date()
+        createdBy: user?.username || "当前用户",
+        createdAt: new Date(),
+        userType: currentUserType
       };
 
       setComments(prevComments => [...prevComments, newComment]);
+
+      // 更新firstComment以立即显示新答案
+      setFirstComment(newComment);
 
       toast({
         title: "回答已添加",
@@ -135,6 +151,43 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
         description: "添加答案时发生错误，请重试。",
         variant: "destructive"
       });
+    }
+  };
+
+  // 新增：删除评论功能
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      const questionId = parseInt(question.id);
+      if (isNaN(questionId)) {
+        throw new Error("问题ID无效");
+      }
+
+      // 调用API删除评论 - 假设有这样的方法
+      // 注意：这个API需要在后端实现
+      await questionService.deleteRevision(questionId, parseInt(commentId));
+
+      // 更新本地状态
+      setComments(prevComments => prevComments.filter(c => c.id !== commentId));
+
+      // 如果删除的是第一条评论，需要更新firstComment
+      if (firstComment && firstComment.id === commentId) {
+        // 找到新的第一条评论（如果有的话）
+        const newFirstComment = comments.find(c => c.id !== commentId);
+        setFirstComment(newFirstComment || null);
+      }
+
+      // 如果有状态变更回调则调用
+      if (onStatusChange) {
+        onStatusChange();
+      }
+    } catch (error) {
+      console.error('删除评论失败:', error);
+      toast({
+        title: "删除失败",
+        description: "删除评论时发生错误，请重试。",
+        variant: "destructive"
+      });
+      throw error; // 向上传递错误，让CommentSection组件处理
     }
   };
 
@@ -159,7 +212,6 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
 
           {/* 显示答案部分 - 优先显示第一条评论内容，如果没有则显示原答案 */}
           <div className="mb-3 mt-4 bg-muted/30 p-3 rounded-md">
-            { /*  <h4 className="text-sm font-medium mb-1 text-muted-foreground">答案:</h4>*/}
             <div className="text-sm text-foreground">
               {isLoading ? (
                 <div className="flex items-center justify-center py-2">
@@ -172,7 +224,6 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
                 question.answer || "暂无答案"
               )}
             </div>
-
           </div>
 
           <div className="flex justify-between items-center text-sm text-muted-foreground">
@@ -199,7 +250,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
             <CommentSection
               comments={comments}
               onAddComment={handleAddComment}
+              onDeleteComment={handleDeleteComment}
               isLoading={isLoading}
+              questionStatus={question.status} // 传递问题状态
             />
           )}
 
@@ -207,6 +260,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onStatusCh
             <CommentSection
               comments={[]}
               onAddComment={handleAddComment}
+              onDeleteComment={handleDeleteComment}
+              questionStatus={question.status} // 传递问题状态
             />
           )}
         </div>

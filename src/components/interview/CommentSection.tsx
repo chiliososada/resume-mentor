@@ -2,23 +2,27 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User, Send } from 'lucide-react';
+import { User, Send, Trash2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/components/ui/use-toast';
 
 interface Comment {
   id: string;
   content: string;
   createdBy: string;
   createdAt: Date;
+  userType?: number; // 添加用户类型字段，用于区分评论者身份
 }
 
 interface CommentSectionProps {
   comments: Comment[];
   onAddComment?: (comment: string) => void;
+  onDeleteComment?: (commentId: string) => Promise<void>; // 添加删除评论的回调
   isLoading?: boolean;
+  questionStatus?: number; // 添加问题状态参数
 }
 
 const formatDate = (date: Date) => {
-  
   return new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
     month: 'short',
@@ -28,14 +32,36 @@ const formatDate = (date: Date) => {
   }).format(date);
 };
 
+// 根据用户类型判断是否为老师或管理员
+const isTeacherOrAdmin = (userType?: number): boolean => {
+  return userType === 1 || userType === 2; // 1 = Teacher, 2 = Admin
+};
+
 export const CommentSection: React.FC<CommentSectionProps> = ({
   comments,
   onAddComment,
-  isLoading = false
+  onDeleteComment,
+  isLoading = false,
+  questionStatus = 0 // 默认为待审核状态
 }) => {
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  // 获取当前用户信息，用于后续判断
+  const { user } = useAuth();
+  const currentUserType = user?.userType || 0;
+  const currentUsername = user?.username || '';
+
+  // 判断当前用户是否可以添加评论
+  // 如果是学生(type=0)且问题已批准(status=1)或已拒绝(status=2)，则不能修改答案
+  const canAddComment = (): boolean => {
+    if (currentUserType === 0 && (questionStatus === 1 || questionStatus === 2)) {
+      return false;
+    }
+    return true;
+  };
 
   const handleAddComment = async () => {
     if (commentText.trim() && onAddComment) {
@@ -48,6 +74,35 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         setIsSubmitting(false);
       }
     }
+  };
+
+  // 处理删除评论
+  const handleDeleteComment = async (commentId: string) => {
+    if (!onDeleteComment) return;
+
+    try {
+      setIsDeleting(commentId);
+      await onDeleteComment(commentId);
+      toast({
+        title: "删除成功",
+        description: "评论已成功删除"
+      });
+    } catch (error) {
+      console.error('删除评论失败:', error);
+      toast({
+        title: "删除失败",
+        description: "删除评论时发生错误",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
+  // 检查用户是否可以删除评论
+  const canDeleteComment = (comment: Comment): boolean => {
+    // 只有教师或管理员可以删除自己的评论
+    return isTeacherOrAdmin(currentUserType) && comment.createdBy === currentUsername;
   };
 
   return (
@@ -72,8 +127,33 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
                   <span className="text-xs text-muted-foreground">
                     {formatDate(comment.createdAt)}
                   </span>
+
+                  {/* 添加删除按钮 */}
+                  {canDeleteComment(comment) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 ml-auto"
+                      onClick={() => handleDeleteComment(comment.id)}
+                      disabled={isDeleting === comment.id}
+                    >
+                      {isDeleting === comment.id ? (
+                        <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+                      ) : (
+                        <Trash2 size={14} className="text-red-500" />
+                      )}
+                    </Button>
+                  )}
                 </div>
-                <div className="bg-muted/50 rounded-lg p-3 mt-1">
+                {/* 根据用户类型设置不同的背景色 */}
+                <div
+                  className={`rounded-lg p-3 mt-1 ${
+                    // 老师或管理员的评论使用特殊背景色
+                    isTeacherOrAdmin(comment.userType)
+                      ? 'bg-blue-50 border border-blue-200'
+                      : 'bg-muted/50'
+                    }`}
+                >
                   <p className="text-sm">{comment.content}</p>
                 </div>
               </div>
@@ -113,22 +193,25 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
               ) : (
                 <>
                   <Send size={14} />
-                  添加答案
+                  修改答案
                 </>
               )}
             </Button>
           </div>
         </div>
       ) : (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mt-2"
-          onClick={() => setShowCommentForm(true)}
-        >
-          <Send size={14} className="mr-1" />
-          添加答案
-        </Button>
+        // 根据用户类型和问题状态决定是否显示"修改答案"按钮
+        canAddComment() && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-2"
+            onClick={() => setShowCommentForm(true)}
+          >
+            <Send size={14} className="mr-1" />
+            修改答案
+          </Button>
+        )
       )}
     </>
   );

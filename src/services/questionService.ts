@@ -39,11 +39,11 @@ export const questionService = {
     filter?: Record<string, any>
   ): Promise<PaginatedResponse<Question>> => {
     let queryParams = `?PageNumber=${page}&PageSize=${pageSize}`;
-    
+
     if (sortBy) {
       queryParams += `&SortBy=${sortBy}`;
     }
-    
+
     if (filter) {
       Object.entries(filter).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
@@ -51,40 +51,51 @@ export const questionService = {
         }
       });
     }
-    
+
     return apiRequest(`/Question${queryParams}`);
   },
-  
+
   getQuestionById: async (id: number): Promise<Question> => {
     return apiRequest(`/Question/${id}`);
   },
-  
+
   createQuestion: async (question: QuestionCreateRequest): Promise<{ questionId: number, message: string }> => {
     return apiRequest("/Question", "POST", question);
   },
-  
-  updateQuestion: async (id: number, question: { questionText?: string, answer?: string }): Promise<{ message: string }> => {
+
+
+  updateQuestion: async (id: number, question: {
+    questionText?: string,
+    answer?: string,
+    skipRevisionCreation?: boolean
+  }): Promise<{ message: string }> => {
     return apiRequest(`/Question/${id}`, "PUT", question);
   },
-  
+
   deleteQuestion: async (id: number): Promise<{ message: string }> => {
     return apiRequest(`/Question/${id}`, "DELETE");
   },
-  
+
   addRevision: async (
-    questionId: number, 
+    questionId: number,
     revision: { revisionText: string, type: number, comments?: string }
   ): Promise<{ revisionId: number, message: string }> => {
     return apiRequest(`/Question/${questionId}/revisions`, "POST", revision);
   },
-  
+
+
+  // 新增：删除修订/评论的方法
+  deleteRevision: async (questionId: number, revisionId: number): Promise<{ message: string }> => {
+    return apiRequest(`/Question/${questionId}/revisions/${revisionId}`, "DELETE");
+  },
+
   getRevisions: async (questionId: number): Promise<any[]> => {
     return apiRequest(`/Question/${questionId}/revisions`);
   },
-  
+
   approveQuestion: async (
-    questionId: number, 
-    status: number, 
+    questionId: number,
+    status: number,
     comments?: string
   ): Promise<{ message: string }> => {
     return apiRequest(`/Question/${questionId}/approve`, "POST", { status, comments });
