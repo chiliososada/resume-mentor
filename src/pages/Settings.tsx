@@ -19,22 +19,34 @@ const SettingsPage = () => {
     introduction: '',
     hobbies: '',
   });
-  
+
   const [passwords, setPasswords] = useState({
     current: '',
     new: '',
     confirm: '',
   });
-  
+
   const { toast } = useToast();
   const { user: authUser } = useAuth(); // 获取当前登录用户信息
-  
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setIsLoading(true);
         const profileData = await profileService.getProfile();
+
+        // 日期格式化处理
+        if (profileData.birthDate) {
+          // 将ISO日期字符串转换为YYYY-MM-DD格式
+          const date = new Date(profileData.birthDate);
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          profileData.birthDate = `${year}-${month}-${day}`;
+        }
+
         setUser(profileData);
+        console.log("原始出生日期:", profileData.birthDate); // 调试用
       } catch (error) {
         console.error('获取个人资料失败:', error);
         toast({
@@ -46,18 +58,18 @@ const SettingsPage = () => {
         setIsLoading(false);
       }
     };
-    
+
     fetchProfile();
   }, [toast]);
-  
+
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setIsLoading(true);
-      
+
       const response = await profileService.updateProfile(user);
-      
+
       toast({
         title: "个人资料已更新",
         description: response.message || "您的个人资料信息已成功更新。",
@@ -73,10 +85,10 @@ const SettingsPage = () => {
       setIsLoading(false);
     }
   };
-  
+
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (passwords.new !== passwords.confirm) {
       toast({
         title: "密码不匹配",
@@ -85,7 +97,7 @@ const SettingsPage = () => {
       });
       return;
     }
-    
+
     if (passwords.new.length < 8) {
       toast({
         title: "密码过短",
@@ -94,22 +106,22 @@ const SettingsPage = () => {
       });
       return;
     }
-    
+
     try {
       setIsLoading(true);
-      
+
       const passwordData: ChangePasswordRequest = {
         currentPassword: passwords.current,
         newPassword: passwords.new
       };
-      
+
       const response = await authService.changePassword(passwordData);
-      
+
       toast({
         title: "密码已更新",
         description: response.message || "您的密码已成功更新。",
       });
-      
+
       setPasswords({
         current: '',
         new: '',
@@ -142,7 +154,7 @@ const SettingsPage = () => {
             管理您的账户设置和偏好
           </p>
         </div>
-        
+
         {/* 用户信息卡片 */}
         <Card className="glass-card animate-in bg-primary/5">
           <CardContent className="p-6">
@@ -153,13 +165,13 @@ const SettingsPage = () => {
               <div className="text-center sm:text-left">
                 <h2 className="text-2xl font-bold tracking-tight">{authUser?.username || '用户'}</h2>
                 <p className="text-muted-foreground">
-                   · ID: {authUser?.id || 'N/A'}
+                  · ID: {authUser?.id || 'N/A'}
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <div className="grid gap-6 md:grid-cols-2">
           <Card className="glass-card animate-in">
             <CardHeader>
@@ -181,7 +193,7 @@ const SettingsPage = () => {
                     onChange={(e) => setUser({ ...user, fullName: e.target.value })}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="birthDate">出生日期</Label>
                   <Input
@@ -191,7 +203,7 @@ const SettingsPage = () => {
                     onChange={(e) => setUser({ ...user, birthDate: e.target.value })}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="birthPlace">出生地</Label>
                   <Input
@@ -200,7 +212,7 @@ const SettingsPage = () => {
                     onChange={(e) => setUser({ ...user, birthPlace: e.target.value })}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="introduction">个人介绍</Label>
                   <Textarea
@@ -210,7 +222,7 @@ const SettingsPage = () => {
                     onChange={(e) => setUser({ ...user, introduction: e.target.value })}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="hobbies">兴趣爱好</Label>
                   <Textarea
@@ -220,14 +232,14 @@ const SettingsPage = () => {
                     onChange={(e) => setUser({ ...user, hobbies: e.target.value })}
                   />
                 </div>
-                
+
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? '保存中...' : '保存更改'}
                 </Button>
               </form>
             </CardContent>
           </Card>
-          
+
           <Card className="glass-card animate-in">
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -249,7 +261,7 @@ const SettingsPage = () => {
                     onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="new-password">新密码</Label>
                   <Input
@@ -259,7 +271,7 @@ const SettingsPage = () => {
                     onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password">确认新密码</Label>
                   <Input
@@ -269,7 +281,7 @@ const SettingsPage = () => {
                     onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
                   />
                 </div>
-                
+
                 <Button
                   type="submit"
                   className="w-full"

@@ -12,12 +12,18 @@ interface ResumeCardProps {
   onView?: () => void;
 }
 
-const formatDate = (date: Date) => {
+// 修改后的代码
+const formatDate = (date: Date | string) => {
+  // 如果输入是字符串，则转换为Date对象
+  const dateObj = typeof date === 'string'
+    ? new Date(date.endsWith('Z') ? date : date + 'Z')
+    : date;
+
   return new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-  }).format(date);
+  }).format(dateObj);
 };
 
 const getStatusIcon = (status: Resume['status']) => {
@@ -91,7 +97,7 @@ export const ResumeCard: React.FC<ResumeCardProps> = ({ resume, onView }) => {
           </div>
         </div>
         <div className="flex divide-x border-t mt-1">
-          <button 
+          <button
             className="flex-1 py-2.5 text-center text-sm font-medium text-primary hover:bg-muted/50 transition-colors"
             onClick={onView}
           >
@@ -104,7 +110,7 @@ export const ResumeCard: React.FC<ResumeCardProps> = ({ resume, onView }) => {
             下载
           </button> */}
 
-<ResumeDownloadButton resume={resume} />
+          <ResumeDownloadButton resume={resume} />
         </div>
       </CardContent>
     </Card>
