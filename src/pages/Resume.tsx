@@ -289,7 +289,7 @@ const ResumePage = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            {/* <Button
+            <Button
               variant="outline"
               className="flex items-center gap-2"
               onClick={handleDownloadTemplate}
@@ -297,7 +297,7 @@ const ResumePage = () => {
             >
               <DownloadCloud size={16} />
               模板
-            </Button> */}
+            </Button>
             <Button
               variant="outline"
               className="flex items-center gap-2"

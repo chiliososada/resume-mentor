@@ -12,6 +12,8 @@ interface RecordingUploadProps {
 }
 
 export const RecordingUpload: React.FC<RecordingUploadProps> = ({ onUploadSuccess }) => {
+  // 在组件开头添加上传进度状态
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [caseContent, setCaseContent] = useState('');
@@ -36,11 +38,11 @@ export const RecordingUpload: React.FC<RecordingUploadProps> = ({ onUploadSucces
       return false;
     }
 
-    // 检查文件大小，限制为20MB
-    if (file.size > 20 * 1024 * 1024) {
+    // 检查文件大小，限制为200MB
+    if (file.size > 200 * 1024 * 1024) {
       toast({
         title: "文件太大",
-        description: "文件大小不能超过20MB。",
+        description: "文件大小不能超过200MB。",
         variant: "destructive",
       });
       return false;
@@ -100,6 +102,7 @@ export const RecordingUpload: React.FC<RecordingUploadProps> = ({ onUploadSucces
     }
   };
 
+  // 修改 handleSubmit 方法中的 toast 相关代码:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file || !title.trim() || !caseContent.trim() || !caseInformation.trim()) {
@@ -112,15 +115,22 @@ export const RecordingUpload: React.FC<RecordingUploadProps> = ({ onUploadSucces
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
 
     try {
-      const response = await recordingService.uploadRecording(
+      // 使用支持进度报告的上传方法
+      const response = await recordingService.uploadRecordingWithProgress(
         file,
         title,
         caseContent,
-        caseInformation
+        caseInformation,
+        (progress) => {
+          setUploadProgress(progress);
+          // 不更新 toast，只更新组件内部状态
+        }
       );
 
+      // 上传成功显示 toast
       toast({
         title: "录音上传成功",
         description: response.message || "您的录音已成功上传。",
@@ -130,6 +140,7 @@ export const RecordingUpload: React.FC<RecordingUploadProps> = ({ onUploadSucces
       setTitle('');
       setCaseContent('');
       setCaseInformation('');
+      setUploadProgress(0);
 
       // 调用成功回调，刷新列表
       if (onUploadSuccess) {
@@ -230,7 +241,7 @@ export const RecordingUpload: React.FC<RecordingUploadProps> = ({ onUploadSucces
                       浏览文件
                     </Button>
                     <p className="text-xs text-muted-foreground mt-3">
-                      支持MP3, WAV, OGG, M4A, AAC, WEBM格式，最大20MB
+                      支持MP3, WAV, OGG, M4A, AAC, WEBM格式，最大200MB
                     </p>
                     <Input
                       type="file"
@@ -268,8 +279,16 @@ export const RecordingUpload: React.FC<RecordingUploadProps> = ({ onUploadSucces
           </div>
 
           <div className="p-5 border-t bg-muted/30">
+            {isUploading && (
+              <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4 dark:bg-gray-700">
+                <div
+                  className="bg-primary h-2.5 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={isUploading}>
-              {isUploading ? "上传中..." : "上传录音"}
+              {isUploading ? `上传中... ${uploadProgress}%` : "上传录音"}
             </Button>
           </div>
         </form>
